@@ -1,0 +1,1044 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Modern Portfolio API",
+    "version": "1.0.0",
+    "description": "Hybrid API specification for Modern Portfolio website with LinkedIn integration, blog server functions, and content management.",
+    "contact": {
+      "name": "Portfolio Team",
+      "url": "https://portfolio.example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://portfolio.example.com",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth 2.0 LinkedIn authentication endpoints"
+    },
+    {
+      "name": "LinkedIn Integration",
+      "description": "LinkedIn messaging and profile synchronization"
+    },
+    {
+      "name": "Blog",
+      "description": "Blog post management via TanStack Start server functions"
+    },
+    {
+      "name": "Comments",
+      "description": "Blog post comment management with moderation"
+    }
+  ],
+  "paths": {
+    "/api/auth/linkedin/init": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Initialize LinkedIn OAuth flow",
+        "description": "Start the LinkedIn OAuth 2.0 authorization process by generating an authorization URL and CSRF state token.",
+        "operationId": "initOAuth",
+        "parameters": [
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "description": "Optional callback URL for OAuth redirect",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Optional CSRF state token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth initialization successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitOAuthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "OAuth configuration error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/linkedin/callback": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Handle LinkedIn OAuth callback",
+        "description": "Process OAuth callback from LinkedIn and exchange authorization code for access token.",
+        "operationId": "oauthCallback",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "description": "Authorization code from LinkedIn",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "CSRF state token for validation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth callback processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthCallbackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid authorization code or state mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "LinkedIn API authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linkedin/send-message": {
+      "post": {
+        "tags": ["LinkedIn Integration"],
+        "summary": "Send message via LinkedIn",
+        "description": "Send a direct message to a LinkedIn user via the Messaging API. Requires valid OAuth access token.",
+        "operationId": "sendLinkedInMessage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent or pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linkedin/profile": {
+      "get": {
+        "tags": ["LinkedIn Integration"],
+        "summary": "Fetch LinkedIn profile",
+        "description": "Retrieve and cache LinkedIn profile data. Cached for 24 hours at the edge.",
+        "operationId": "fetchLinkedInProfile",
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "query",
+            "description": "OAuth access token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LinkedIn profile retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedInProfileResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profile not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog/posts": {
+      "get": {
+        "tags": ["Blog"],
+        "summary": "Get blog posts",
+        "description": "Retrieve paginated list of blog posts",
+        "operationId": "getBlogPosts",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["date", "title", "views"],
+              "default": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog posts retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBlogPostsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog/posts/{slug}": {
+      "get": {
+        "tags": ["Blog"],
+        "summary": "Get blog post by slug",
+        "operationId": "getBlogPost",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog post retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBlogPostResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog/posts/{postId}/comments": {
+      "get": {
+        "tags": ["Comments"],
+        "summary": "Get comments for blog post",
+        "operationId": "getComments",
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCommentsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Comments"],
+        "summary": "Create new comment",
+        "operationId": "createComment",
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCommentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InitOAuthResponse": {
+        "type": "object",
+        "required": ["authorization_url", "state"],
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "LinkedIn authorization URL"
+          },
+          "state": {
+            "type": "string",
+            "description": "CSRF state token"
+          }
+        }
+      },
+      "OAuthCallbackResponse": {
+        "type": "object",
+        "required": ["success", "redirect_url"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "access_token": {
+            "type": "string",
+            "description": "OAuth access token"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token lifetime in seconds"
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "sub": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "picture": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "redirect_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["access_token", "message"],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "message": {
+            "type": "object",
+            "required": ["subject", "body"],
+            "properties": {
+              "subject": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "body": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 2000
+              },
+              "sender_email": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        }
+      },
+      "SendMessageResponse": {
+        "type": "object",
+        "required": ["success", "status"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "pending", "failed"]
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "LinkedInProfileResponse": {
+        "type": "object",
+        "required": ["id", "firstName", "lastName"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "object",
+            "properties": {
+              "localized": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "lastName": {
+            "type": "object",
+            "properties": {
+              "localized": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "headline": {
+            "type": "string"
+          },
+          "profilePicture": {
+            "type": "object",
+            "properties": {
+              "displayImage": {
+                "type": "string"
+              }
+            }
+          },
+          "cached_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cache_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GetBlogPostsResponse": {
+        "type": "object",
+        "required": ["posts", "pagination"],
+        "properties": {
+          "posts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "slug", "title", "excerpt", "publishedAt"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "excerpt": {
+                  "type": "string"
+                },
+                "author": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "avatar": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                },
+                "publishedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "readingTime": {
+                  "type": "integer"
+                },
+                "viewCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        }
+      },
+      "GetBlogPostResponse": {
+        "type": "object",
+        "required": ["id", "slug", "title", "content"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "description": "MDX content"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "bio": {
+                "type": "string"
+              },
+              "avatar": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "readingTime": {
+            "type": "integer"
+          },
+          "seo": {
+            "type": "object",
+            "properties": {
+              "metaTitle": {
+                "type": "string"
+              },
+              "metaDescription": {
+                "type": "string"
+              },
+              "ogImage": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "GetCommentsResponse": {
+        "type": "object",
+        "required": ["comments", "pagination"],
+        "properties": {
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "required": ["id", "postId", "author", "content", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "postId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "For threaded replies"
+          },
+          "author": {
+            "type": "object",
+            "required": ["name", "email"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Hashed/masked in response"
+              },
+              "avatar": {
+                "type": "string",
+                "format": "uri"
+              },
+              "isVerified": {
+                "type": "boolean"
+              }
+            }
+          },
+          "content": {
+            "type": "string",
+            "description": "Sanitized HTML"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["approved", "pending", "spam"]
+          },
+          "votes": {
+            "type": "object",
+            "properties": {
+              "up": {
+                "type": "integer"
+              },
+              "down": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "CreateCommentRequest": {
+        "type": "object",
+        "required": ["postId", "author", "content", "recaptchaToken"],
+        "properties": {
+          "postId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "For replies"
+          },
+          "author": {
+            "type": "object",
+            "required": ["name", "email"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 100
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "website": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "content": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 5000
+          },
+          "recaptchaToken": {
+            "type": "string",
+            "description": "reCAPTCHA v3 token for validation"
+          }
+        }
+      },
+      "CreateCommentResponse": {
+        "type": "object",
+        "required": ["success", "comment"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "comment": {
+            "type": "object",
+            "required": ["id", "status"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "approved"]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "required": ["page", "limit", "total", "totalPages", "hasNext", "hasPrev"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasNext": {
+            "type": "boolean"
+          },
+          "hasPrev": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": ["type", "title", "status", "timestamp"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI identifying the problem type"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short, human-readable summary"
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI to specific occurrence"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Validation errors by field"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ShareContentRequest": {
+        "type": "object",
+        "required": ["profile_url", "message"],
+        "properties": {
+          "profile_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "LinkedIn profile URL"
+          },
+          "message": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Pre-formatted message text"
+              },
+              "subject": {
+                "type": "string",
+                "description": "Optional subject line"
+              }
+            }
+          }
+        }
+      },
+      "ShareContentResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "share_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "LinkedIn share URL to open"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://www.linkedin.com/oauth/v2/authorization",
+            "tokenUrl": "https://www.linkedin.com/oauth/v2/accessToken",
+            "scopes": {
+              "openid": "OpenID profile access",
+              "profile": "Basic profile information",
+              "w_member_social": "Write member social content",
+              "email": "Email address access"
+            }
+          }
+        }
+      }
+    }
+  }
+}
