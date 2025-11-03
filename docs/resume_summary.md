@@ -1,7 +1,8 @@
 # Daniel Valle
+
 **Lead Web Developer**
 
-+52 55-1374-4632 | dvalle0@gmail.com | [LinkedIn](https://www.linkedin.com/in/dan-valang) | [GitHub](https://github.com/danvalang) | Mexico City, Mexico
++52 55-1374-4632 | <dvalle0@gmail.com> | [LinkedIn](https://www.linkedin.com/in/dan-valang) | [GitHub](https://github.com/danvalang) | Mexico City, Mexico
 
 ## Professional Summary
 
@@ -22,7 +23,9 @@ Results-driven Lead Software Developer with 14+ years architecting and deliverin
 ## Work Experience
 
 ### Full-Stack Developer / Contractor
+
 **Sleep Architects** (February 2025 – Present, Remote)
+
 - Led migration of authentication system from NextAuth to Auth0 to AWS Cognito, enhancing security and user management capabilities.
 - Architected and implemented comprehensive booking and scheduling system by integrating Zoho Bookings API for seamless appointment management.
 - Designed and deployed secure file upload system using AWS S3 for patient documents and insurance cards, improving data accessibility.
@@ -30,20 +33,26 @@ Results-driven Lead Software Developer with 14+ years architecting and deliverin
 - Spearheaded design and implementation of new backend API (v2) improving performance, scalability, and maintainability.
 
 ### Lead Full-Stack Architect / Freelance Consultant
+
 **Health Industry** (August 2022 – November 2024, Remote)
+
 - Delivered the entire V2 of the core product “Karla,” architecting a modern, scalable, and cost-efficient foundation.
 - Architected and led the full-stack delivery of Karla V2, ensuring seamless, high-performance integration across all services.
 - Designed and implemented a robust serverless backend (Node.js/AWS Lambda/DynamoDB), significantly boosting scalability, performance, and maintainability.
 
 ### Lead Software Engineer
+
 **Synchronous Health, Inc** (June 2019 – July 2022, Remote)
+
 - Progressed from Senior to Lead Engineer, providing full-stack leadership for web and hybrid mobile platforms.
 - Led the complete ground-up rebuild of the core “Whendo” visual editing engine (Blockly-based).
 - Identified and immediately resolved a Critical vulnerability, preventing a major HIPAA compliance breach.
 - Engineered and deployed a real-time therapist and management alert system to flag high-risk patient behaviors.
 
 ### Senior Software Engineer
+
 **Encora Inc** (August 2020 – July 2022, Remote)
+
 - Delivered high-impact full-stack and architectural solutions for Encora’s clients, specializing in scalable cloud-native applications.
 
 ... (and other positions)
@@ -51,7 +60,9 @@ Results-driven Lead Software Developer with 14+ years architecting and deliverin
 ## Education
 
 ### Master’s degree, Computer Software Engineering
+
 **Universidad del Pedregal** (Jan 2012 – Jan 2014)
 
 ### Bachelor’s degree, Management Information Systems
+
 **Universidad del Pedregal** (Aug 2004 – Jul 2008)
