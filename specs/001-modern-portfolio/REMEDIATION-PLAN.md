@@ -1,710 +1,576 @@
-# Remediation Plan: 001-Modern-Portfolio Analysis Findings
+# Remediation Plan for Modern Portfolio Analysis
 
 **Generated**: 2025-11-04  
-**Analysis Context**: Post `/speckit.analyze` cross-artifact consistency check  
-**Status**: Ready for implementation via Orchestrator mode
+**Source**: Cross-artifact consistency analysis (spec.md, plan.md, tasks.md)
+
+## Executive Summary
+
+This document provides concrete remediation edits to resolve the top 5 critical/high severity issues identified in the specification analysis, plus additional tasks for missing feature coverage.
 
 ---
 
-## 1. Sample Clarification Questions for `[NEEDS CLARIFICATION]` Requirements
+## Priority 1: Critical Issues
 
-### FR-017: Bookings Link (Optional scheduling)
+### Issue A1/C1: Performance Budget Risk - Bundle Size
 
-**Question**: Should the portfolio include a booking/scheduling integration for consultation calls?
+**Severity**: CRITICAL  
+**Location**: [`plan.md:106`](plan.md:106), [`constitution.md:31-33`](.specify/memory/constitution.md:31-33)  
+**Problem**: Hybrid architecture (Astro islands + TanStack Start base ~110-130KB) approaches constitutional 200KB JS limit before feature code
 
-**Options**:
-- **A. Yes - Full Integration**: Integrate with Calendly/Cal.com for automated scheduling
-  - Requires: Embed widget, API integration for availability sync
-  - Benefit: Reduces friction for potential clients to book calls
-  - Tradeoff: +15-20KB JS, third-party dependency
-  
-- **B. Yes - Simple Link**: Add a "Schedule a Call" link to external booking page
-  - Requires: Button/link component only
-  - Benefit: Minimal implementation, no performance impact
-  - Tradeoff: Less integrated experience
-  
-- **C. No**: Contact form only, manual scheduling
-  - Requires: No additional work
-  - Benefit: Simplest approach, no external dependencies
-  - Tradeoff: Manual follow-up required
+#### Recommended Fix for plan.md
 
-**Recommended Decision**: Option B (simple link) - balances user convenience with performance/simplicity
+Add new section after line 168 (Risk Areas and Mitigations):
 
-**Spec Update if Yes**:
 ```markdown
-- FR-017: The site MUST provide a "Schedule a Call" link/button that opens [Calendly/Cal.com/other] in a new tab for consultation booking.
+### Performance Budget Compliance Strategy
+
+**Constitutional Requirement**: Total JS ≤ 200KB gzipped per route
+
+**Current Base Bundle Estimate**:
+- Astro: ~5KB (runtime)
+- React islands: ~20-40KB per island (React 18 ~45KB shared)
+- TanStack Start base: React 45KB + Router 15KB + Framer Motion 30KB = ~90KB
+- **Total base**: ~110-135KB before feature code
+
+**Mitigation Strategy**:
+1. **Lazy Load Framer Motion**: Import animations on-demand using dynamic imports
+   - Hero animations: ~10KB
+   - Skills animations: ~8KB
+   - Blog animations: ~7KB
+   - Total potential savings: ~15-20KB by not loading all at once
+
+2. **Code Splitting by Route**:
+   - Home route: Astro (static) + minimal React island ~30KB
+   - Case studies: Astro + React island ~35KB
+   - Contact: Astro + form validation ~25KB
+   - Blog (TanStack): Separate bundle ~120KB (within budget for blog-only routes)
+
+3. **Bundle Monitoring**:
+   - Add bundle size CI check in Phase 8 (T156)
+   - Fail build if any route exceeds 200KB gzipped
+   - Use vite-plugin-bundle-analyzer for profiling
+
+4. **Acceptable Trade-offs**:
+   - Blog routes may approach 180KB due to TanStack Start base
+   - Static portfolio routes will stay under 100KB due to Astro's zero-JS default
+   - Overall site performance target (Lighthouse ≥90) remains achievable
+
+**Decision**: Proceed with hybrid architecture with monitoring; constitutional compliance validated per-route rather than globally.
+```
+
+#### Required Task Addition
+
+Add to Phase 8 after T156:
+
+```markdown
+- [ ] T156b [Perf] Configure per-route bundle size limits in vite.config.ts (Astro routes: 100KB, Blog routes: 200KB)
+- [ ] T156c [Perf] Add bundle size regression test in CI that fails if limits exceeded
 ```
 
 ---
 
-### FR-018: Analytics (Privacy-preserving page views)
+### Issue A2: LinkedIn API Integration Specification Gap
 
-**Question**: What analytics tracking should be implemented, and which tool should be used?
+**Severity**: HIGH  
+**Location**: [`spec.md:86-91`](spec.md:86-91), missing in [`contracts/`](contracts/)  
+**Problem**: LinkedIn API integration (OAuth, endpoints, rate limits) lacks concrete implementation specification
 
-**Options**:
-- **A. Plausible Analytics**: Privacy-first, GDPR-compliant, <1KB script
-  - Tracks: Page views, referrers, devices, no cookies
-  - Cost: $9/mo (10K pageviews), self-hostable
-  - Benefit: Privacy-compliant, no consent banners needed
-  
-- **B. Google Analytics 4**: Industry standard, free
-  - Tracks: Everything (configurable)
-  - Cost: Free
-  - Tradeoff: Requires cookie consent, privacy concerns, heavier script
-  
-- **C. Netlify Analytics**: Server-side, no JS required
-  - Tracks: Page views, referrers (server logs only)
-  - Cost: $9/mo
-  - Benefit: Zero performance impact, privacy-first
-  
-- **D. No Analytics**: No tracking
-  - Benefit: Simplest, no privacy concerns
-  - Tradeoff: No data-driven insights
+#### Recommended Fix: Create contracts/linkedin-api.schema.ts
 
-**Recommended Decision**: Option A (Plausible) or C (Netlify) - both privacy-first and performant
+Create new file: `specs/001-modern-portfolio/contracts/linkedin-api.schema.ts`
 
-**Spec Update if Yes**:
-```markdown
-- FR-018: The site MUST integrate Plausible Analytics for privacy-preserving page view tracking without cookies or personal data collection. Analytics script MUST be <5KB and not block page rendering.
-```
-
----
-
-### FR-019: Testimonial Permissions (Attribution requirements)
-
-**Question**: How should testimonial attribution and permissions be managed?
-
-**Options**:
-- **A. Explicit Permission Required**: Each testimonial requires written consent for public attribution
-  - Data model: `Testimonial.permissionGranted: boolean`, `Testimonial.consentDate: Date`
-  - Display logic: If `permissionGranted === false`, show "Anonymous Senior Engineer at Healthcare Tech Company"
-  - Process: Email confirmation workflow before adding to site
-  
-- **B. Assume Permission if Provided**: Use full attribution for all provided testimonials
-  - Simpler: No permission tracking required
-  - Risk: Legal/privacy concerns if someone objects
-  
-- **C. No Testimonials**: Remove testimonial feature entirely
-  - Simplest: No complexity
-  - Tradeoff: Loses trust-building element
-
-**Recommended Decision**: Option A (explicit permission) - legally safe and professionally appropriate
-
-**Spec Update**:
-```markdown
-- FR-019: Testimonials MUST include a `permissionGranted` boolean flag. When `true`, display full attribution (name, role, organization). When `false`, display anonymized title (e.g., "Senior Engineer at Healthcare Tech Company") without name or identifiable organization. The site MUST maintain a record of consent date for each testimonial.
-```
-
-**Additional Data Model**:
 ```typescript
-interface Testimonial {
-  // ... existing fields
-  permissionGranted: boolean;
-  consentDate?: Date; // ISO 8601 string
-  anonymizedTitle?: string; // Used when permissionGranted === false
-}
+/**
+ * LinkedIn API Integration Contract
+ * 
+ * Covers OAuth 2.0 flow, API endpoints, rate limits, and caching strategy
+ * for FR-020 through FR-023, FR-036, FR-037
+ */
+
+import { z } from 'zod';
+
+// OAuth 2.0 Configuration
+export const LinkedInOAuthConfig = z.object({
+  clientId: z.string().min(1),
+  clientSecret: z.string().min(1),
+  redirectUri: z.string().url(),
+  scope: z.array(z.enum([
+    'r_liteprofile',      // Basic profile (name, photo)
+    'r_emailaddress',     // Email
+    'r_fullprofile',      // Full profile (experience, skills)
+    'w_member_social',    // Post updates (for blog cross-posting)
+    'r_organization_social', // Read company pages
+  ])),
+  state: z.string().min(16), // CSRF protection
+});
+
+// Profile Data (FR-020)
+export const LinkedInProfile = z.object({
+  id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  headline: z.string().optional(),
+  profilePicture: z.string().url().optional(),
+  experience: z.array(z.object({
+    title: z.string(),
+    company: z.string(),
+    companyLinkedInId: z.string().optional(),
+    startDate: z.object({ month: z.number(), year: z.number() }),
+    endDate: z.object({ month: z.number(), year: z.number() }).optional(),
+    description: z.string().optional(),
+    location: z.string().optional(),
+  })),
+  skills: z.array(z.object({
+    name: z.string(),
+    endorsementCount: z.number().optional(),
+  })),
+  recommendations: z.array(z.object({
+    recommenderName: z.string(),
+    recommenderHeadline: z.string().optional(),
+    text: z.string(),
+    date: z.string().datetime(),
+  })),
+});
+
+// Caching Strategy (FR-021)
+export const LinkedInCacheConfig = z.object({
+  ttl: z.number().default(86400), // 24 hours in seconds
+  storageBackend: z.enum(['netlify-kv', 'dynamodb', 'redis']),
+  invalidationStrategy: z.enum(['ttl', 'webhook', 'manual']),
+});
+
+// Rate Limiting (FR-022 fallback)
+export const LinkedInRateLimits = z.object({
+  profile: z.object({
+    requestsPerDay: z.number().default(100),
+    requestsPerHour: z.number().default(25),
+  }),
+  posting: z.object({
+    requestsPerDay: z.number().default(25),
+    requestsPerHour: z.number().default(10),
+  }),
+});
+
+// Article Cross-Posting (FR-036, FR-037)
+export const LinkedInArticlePost = z.object({
+  title: z.string().max(200),
+  content: z.string().max(110000), // LinkedIn limit
+  canonicalUrl: z.string().url(),
+  publishedAt: z.string().datetime(),
+  visibility: z.enum(['PUBLIC', 'CONNECTIONS']).default('PUBLIC'),
+});
+
+// API Endpoints
+export const LinkedInEndpoints = {
+  oauth: {
+    authorize: 'https://www.linkedin.com/oauth/v2/authorization',
+    token: 'https://www.linkedin.com/oauth/v2/accessToken',
+  },
+  api: {
+    profile: 'https://api.linkedin.com/v2/me',
+    email: 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+    experience: 'https://api.linkedin.com/v2/positions',
+    skills: 'https://api.linkedin.com/v2/skills',
+    share: 'https://api.linkedin.com/v2/ugcPosts', // For article cross-posting
+  },
+} as const;
+
+// Fallback Strategy (FR-022)
+export const LinkedInFallbackUI = z.object({
+  showPlaceholder: z.boolean(),
+  cacheOnly: z.boolean(),
+  errorMessage: z.string(),
+  retryAfter: z.number().optional(), // seconds
+});
+
+export type LinkedInOAuthConfig = z.infer<typeof LinkedInOAuthConfig>;
+export type LinkedInProfile = z.infer<typeof LinkedInProfile>;
+export type LinkedInCacheConfig = z.infer<typeof LinkedInCacheConfig>;
+export type LinkedInArticlePost = z.infer<typeof LinkedInArticlePost>;
+export type LinkedInFallbackUI = z.infer<typeof LinkedInFallbackUI>;
 ```
 
----
+#### Required Task Addition
 
-## 2. Specific Task Breakdowns (5-Task Subtasks)
-
-### A. Internationalization (i18n) Implementation Tasks
-
-**Replace**: T031 "Add internationalization support for hero and contact sections"  
-**With**: 5 specific subtasks
+Add to Phase 7 after T084:
 
 ```markdown
-### Internationalization Setup
-
-- [ ] T031-1 [P] Setup react-i18next with Astro i18n routing
-  - Install: `react-i18next`, `i18next`, `@astrojs/i18n`
-  - Configure: `astro.config.mjs` with `i18n: { defaultLocale: 'en', locales: ['en', 'es'] }`
-  - Create: `src/i18n/config.ts` with i18next initialization
-  - Files: `astro.config.mjs`, `src/i18n/config.ts`
-
-- [ ] T031-2 [P] Create language switcher component
-  - Component: `src/components/LanguageSwitcher.astro`
-  - Features: Dropdown/toggle for EN/ES selection, persist choice to localStorage
-  - Styling: Tailwind CSS with shadcn/ui Button component
-  - Accessibility: ARIA labels, keyboard navigation
-  - Files: `src/components/LanguageSwitcher.astro`
-
-- [ ] T031-3 [P] Implement path-based routing structure
-  - Routes: `/en/[page]` and `/es/[page]` for all pages
-  - Middleware: Detect browser language on first visit (navigator.language)
-  - Redirect: `/` → `/en/` or `/es/` based on preference
-  - Files: `src/middleware.ts`, `src/pages/en/[...slug].astro`, `src/pages/es/[...slug].astro`
-
-- [ ] T031-4 [P] Add hreflang tags and SEO metadata
-  - Component: `src/components/SEOHead.astro` with hreflang logic
-  - Tags: `<link rel="alternate" hreflang="en" href="/en/about" />`
-  - Sitemap: Generate separate sitemaps for EN and ES (`sitemap-en.xml`, `sitemap-es.xml`)
-  - Files: `src/components/SEOHead.astro`, `src/pages/sitemap-[lang].xml.ts`
-
-- [ ] T031-5 Externalize content to locale files
-  - Structure: `src/i18n/locales/en/*.json`, `src/i18n/locales/es/*.json`
-  - Namespaces: `common.json`, `hero.json`, `about.json`, `projects.json`, `contact.json`
-  - Validation: Zod schemas to ensure all keys exist in both languages
-  - Files: `src/i18n/locales/`, `src/i18n/schemas.ts`
+- [ ] T084b [P] [LinkedIn] Implement LinkedIn OAuth 2.0 flow in netlify/edge-functions/linkedin-oauth.ts
+- [ ] T084c [P] [LinkedIn] Configure Netlify KV for LinkedIn data caching with 24-hour TTL
+- [ ] T084d [P] [LinkedIn] Implement rate limit tracking and exponential backoff in shared/utils/linkedin-rate-limiter.ts
 ```
 
 ---
 
-### B. Animation System (Framer Motion) Implementation Tasks
+### Issue A6: Architecture Deployment Strategy Inconsistency
 
-**Replace**: T032 "Add animations with Framer Motion"  
-**With**: 5 specific subtasks
+**Severity**: HIGH  
+**Location**: [`plan.md:16-18`](plan.md:16-18) vs [`plan.md:386-402`](plan.md:386-402)  
+**Problem**: Architecture describes hybrid Astro+TanStack but recommends single Netlify deployment
+
+#### Recommended Fix for plan.md
+
+**Replace lines 16-39** (Technical Context section) with:
 
 ```markdown
-### Animation System Setup
+## Technical Context
 
-- [ ] T032-1 [P] Install and configure Framer Motion
-  - Install: `framer-motion` (verify ~30KB gzipped)
-  - Config: `src/lib/animations/config.ts` with global spring configs
-  - Performance: Verify bundle impact with `vite-plugin-bundle-analyzer`
-  - Files: `package.json`, `src/lib/animations/config.ts`
+**Language/Version**: TypeScript 5.x with React 18+
 
-- [ ] T032-2 [P] Create animation variant library
-  - Variants: `fadeIn`, `slideUp`, `slideLeft`, `scale`, `stagger`
-  - File: `src/lib/animations/variants.ts`
-  - Example:
-    ```typescript
-    export const fadeIn = {
-      hidden: { opacity: 0 },
-      visible: { opacity: 1, transition: { duration: 0.6 } }
-    };
-    ```
-  - Files: `src/lib/animations/variants.ts`
+**Architecture**: Unified Astro-based site with selective React islands
 
-- [ ] T032-3 [P] Implement scroll-based parallax effects
-  - Hook: `useScrollParallax()` with `useScroll()` and `useTransform()`
-  - Apply to: Hero background images, section dividers
-  - Performance: Use `will-change: transform` sparingly
-  - Files: `src/lib/animations/useScrollParallax.ts`
+**DECISION**: Single-platform deployment (Netlify only) chosen for simplicity, cost, and maintainability over hybrid multi-cloud approach.
 
-- [ ] T032-4 [P] Add staggered list animations
-  - Component: `AnimatedList` wrapper with `staggerChildren` delay
-  - Apply to: Project cards, skills list, testimonials
-  - Example:
-    ```typescript
-    <motion.ul variants={staggerContainer} initial="hidden" animate="visible">
-      {items.map(item => <motion.li variants={fadeIn}>{item}</motion.li>)}
-    </motion.ul>
-    ```
-  - Files: `src/components/AnimatedList.tsx`
+**Primary Framework**: Astro 4.x (SSG with opt-in SSR via Edge Functions)
 
-- [ ] T032-5 Implement reduced-motion support
-  - Hook: `usePrefersReducedMotion()` with `window.matchMedia('(prefers-reduced-motion: reduce)')`
-  - Fallback: When true, disable animations (immediate transitions)
-  - Apply globally: Pass to all motion components via context
-  - Files: `src/lib/animations/usePrefersReducedMotion.ts`, `src/components/AnimationProvider.tsx`
+**Primary Dependencies**:
+
+*Core Framework:*
+- **Framework**: Astro 4.x with React integration for interactive islands
+- **Styling**: Tailwind CSS v3+ with shadcn/ui component library
+- **State Management**: Jotai (atomic state for React islands)
+- **Routing**: Astro file-based routing with i18n support
+- **Animations**: Framer Motion (~30KB gzipped) for micro-interactions
+- **i18n**: Built-in Astro i18n routing + react-i18next for React islands
+- **Content**: Astro Content Collections for MDX blog posts
+- **Build**: Vite 5+ (integrated)
+- **Deployment**: Netlify (static + Edge Functions + Netlify Functions)
+
+*Blog Implementation:*
+- **Approach**: Astro Content Collections with MDX
+- **Dynamic Features**: Netlify Functions for comments, search, cross-posting
+- **SSR**: Astro hybrid mode for dynamic blog routes
+
+*Shared/Cross-Cutting:*
+- **Linting**: oxlint (Rust-based, 50-100x faster than ESLint)
+- **Formatting**: Prettier (compatible with oxlint via separate pass)
+- **Validation**: Zod (TypeScript-first schemas for all data)
+- **HTTP Client**: TanStack Query (LinkedIn API, server state)
+- **Testing**: Vitest + React Testing Library (unit), Playwright (E2E)
+- **Observability**: Sentry (error tracking)
 ```
 
----
+**Remove lines 325-412** (entire Routing Integration Strategy and Deployment Strategy sections)
 
-### C. Dark Mode Implementation Tasks
-
-**Replace**: T029 "Add responsive design with Tailwind CSS" (which incorrectly includes dark mode)  
-**With**: 4 specific subtasks
+**Add new section after Project Structure**:
 
 ```markdown
-### Dark Mode System
+## Unified Deployment Architecture
 
-- [ ] T-Dark-1 [P] Create theme provider with Jotai
-  - Atom: `themeAtom` with type `'light' | 'dark' | 'system'`
-  - Hook: `useTheme()` returning `{ theme, setTheme, resolvedTheme }`
-  - System detection: Listen to `prefers-color-scheme` media query
-  - Files: `src/store/theme.ts`, `src/hooks/useTheme.ts`
-
-- [ ] T-Dark-2 [P] Build theme toggle component
-  - Component: `ThemeToggle` with sun/moon icons
-  - UI: shadcn/ui Button with icon transition animation
-  - Location: Header/navigation bar
-  - Accessibility: ARIA label "Toggle dark mode"
-  - Files: `src/components/ThemeToggle.tsx`
-
-- [ ] T-Dark-3 [P] Implement localStorage persistence
-  - Logic: Save theme preference to `localStorage.theme`
-  - Load: Read on mount, apply before hydration to prevent flash
-  - Script: Inline blocking script in `<head>` for instant theme
-  - Files: `src/layouts/BaseLayout.astro` (inline script)
-
-- [ ] T-Dark-4 Implement CSS variable system for themes
-  - Variables: Define all colors as CSS custom properties
-  - Light theme: `--color-bg: 255 255 255`, `--color-text: 0 0 0`
-  - Dark theme: `--color-bg: 18 18 18`, `--color-text: 255 255 255`
-  - Tailwind: Use `bg-[rgb(var(--color-bg))]` syntax
-  - Verify: WCAG 2.1 AA contrast in both themes
-  - Files: `src/styles/themes.css`, `tailwind.config.mjs`
-```
-
----
-
-### D. SEO Implementation Tasks
-
-**Replace**: T101 "SEO optimization for all pages"  
-**With**: 5 specific subtasks
-
-```markdown
-### SEO Comprehensive Setup
-
-- [ ] T-SEO-1 [P] Create SEO metadata component
-  - Component: `SEOHead.astro` with props for title, description, image, type
-  - Tags: `<title>`, `<meta name="description">`, `<link rel="canonical">`
-  - Defaults: Fallback values for all metadata
-  - Files: `src/components/SEOHead.astro`
-
-- [ ] T-SEO-2 [P] Implement Open Graph tags
-  - Tags: `og:title`, `og:description`, `og:image`, `og:url`, `og:type`
-  - Twitter: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
-  - Image: Generate OG images for each page (1200x630px)
-  - Files: `src/components/SEOHead.astro`, `public/og/`
-
-- [ ] T-SEO-3 [P] Generate sitemap with internationalization
-  - Route: `/sitemap.xml` (index), `/sitemap-en.xml`, `/sitemap-es.xml`
-  - Content: All public pages with `<lastmod>`, `<changefreq>`, `<priority>`
-  - Hreflang: Include `xhtml:link` with alternate language URLs
-  - Files: `src/pages/sitemap.xml.ts`, `src/pages/sitemap-[lang].xml.ts`
-
-- [ ] T-SEO-4 [P] Implement canonical URL logic
-  - Logic: Each page specifies its canonical URL
-  - Duplicates: Handle `/` vs `/index`, `/about` vs `/about/`
-  - I18n: EN pages canonical to `/en/[page]`, ES to `/es/[page]`
-  - Files: `src/components/SEOHead.astro`
-
-- [ ] T-SEO-5 Add robots.txt and meta robots tags
-  - File: `public/robots.txt` with sitemap reference
-  - Content:
-    ```
-    User-agent: *
-    Allow: /
-    Sitemap: https://danielvalle.dev/sitemap.xml
-    ```
-  - Meta: Add `<meta name="robots" content="index, follow">` to public pages
-  - Files: `public/robots.txt`, `src/components/SEOHead.astro`
-```
-
----
-
-### E. Performance Monitoring Tasks
-
-**Replace**: T096 "Performance optimization across all stories"  
-**With**: 5 specific subtasks
-
-```markdown
-### Performance Monitoring & Optimization
-
-- [ ] T-Perf-1 [P] Setup bundle analyzer
-  - Tool: `rollup-plugin-visualizer` for Vite
-  - Config: Add to `vite.config.ts` with `gzip: true`
-  - Report: Generate HTML report showing bundle composition
-  - Threshold: Fail build if any route exceeds 200KB gzipped
-  - Files: `vite.config.ts`, `package.json` scripts
-
-- [ ] T-Perf-2 [P] Implement code splitting strategy
-  - Strategy: Route-based splitting (automatic with Astro/TanStack Router)
-  - Lazy load: Non-critical components with `React.lazy()` + `Suspense`
-  - Examples: Blog comments, LinkedIn data, animation-heavy components
-  - Verify: Each route stays under 200KB gzipped
-  - Files: Component files with dynamic imports
-
-- [ ] T-Perf-3 [P] Setup Lighthouse CI
-  - Tool: `@lhci/cli` in GitHub Actions
-  - Config: `.lighthouserc.json` with performance budget assertions
-  - Assertions:
-    ```json
-    {
-      "performance": 90,
-      "accessibility": 90,
-      "best-practices": 90,
-      "seo": 90,
-      "total-blocking-time": 200,
-      "largest-contentful-paint": 2500
-    }
-    ```
-  - Files: `.github/workflows/lighthouse-ci.yml`, `.lighthouserc.json`
-
-- [ ] T-Perf-4 [P] Implement Core Web Vitals monitoring
-  - Library: `web-vitals` for client-side measurement
-  - Metrics: LCP, INP, CLS, FCP, TTFB
-  - Reporting: Send to Sentry or custom analytics endpoint
-  - Dashboard: View metrics by route, device, time period
-  - Files: `src/lib/vitals.ts`, integration with Sentry
-
-- [ ] T-Perf-5 Configure performance budget enforcement
-  - Tool: `bundlesize` package for CI checks
-  - Config: `.bundlesizerc` with per-route limits
-  - Example:
-    ```json
-    {
-      "files": [
-        { "path": "dist/assets/index-*.js", "maxSize": "100 kB" },
-        { "path": "dist/assets/blog-*.js", "maxSize": "80 kB" }
-      ]
-    }
-    ```
-  - CI: Fail PR if budget exceeded
-  - Files: `.bundlesizerc`, `.github/workflows/ci.yml`
-```
-
----
-
-## 3. Complete Find/Replace List for Terminology Standardization
-
-**Execute these replacements across `spec.md`, `plan.md`, and `tasks.md`:**
-
-### Phase 1: File Paths and URLs
-
-| Find | Replace | Files |
-|------|---------|-------|
-| `app/routes/projects/` | `app/routes/case-studies/` | plan.md, tasks.md |
-| `/projects/:slug` | `/case-studies/:slug` | plan.md, tasks.md |
-| `projects.astro` | `case-studies.astro` | tasks.md |
-| `projects/[slug].astro` | `case-studies/[slug].astro` | tasks.md |
-| `src/pages/projects` | `src/pages/case-studies` | plan.md, tasks.md |
-
-### Phase 2: Type Names and Components
-
-| Find | Replace | Files |
-|------|---------|-------|
-| `ProjectCard` | `CaseStudyCard` | plan.md, tasks.md |
-| `projects/` (in component paths) | `case-studies/` | tasks.md |
-| `SkillsViz` | `SkillsVisualization` | tasks.md |
-| `skills showcase` | `skills visualization` | spec.md, plan.md |
-
-### Phase 3: Prose and Documentation
-
-| Find (case-insensitive) | Replace | Files |
-|-------------------------|---------|-------|
-| "projects page" | "case studies page" | spec.md, plan.md, tasks.md |
-| "project case study" | "case study" | spec.md, plan.md |
-| "the projects" | "the case studies" | All files |
-
-### Verification Script
-
-After replacements, run this verification:
-
-```bash
-# Check for remaining "project" references (should be minimal)
-grep -i "project" specs/001-modern-portfolio/{spec,plan,tasks}.md | grep -v "case study"
-
-# Should only find:
-# - "Project Structure" headers (acceptable)
-# - "project root" (directory reference, acceptable)
-# - "project type" (metadata, acceptable)
-```
-
----
-
-## 4. Full Monorepo Structure Diagram (Astro + TanStack Start)
-
-```
-/home/dan/code/personal/portfolio/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml                    # Lint, test, build
-│       ├── lighthouse-ci.yml         # Performance checks
-│       └── deploy.yml                # Netlify + SST deployment
-│
-├── packages/                         # Monorepo workspaces
-│   ├── astro-site/                   # Main portfolio (Astro 4.x)
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   │   ├── Hero.astro
-│   │   │   │   ├── CaseStudyCard.astro
-│   │   │   │   ├── SkillsVisualization.astro
-│   │   │   │   ├── LanguageSwitcher.astro
-│   │   │   │   ├── ThemeToggle.tsx    # React island
-│   │   │   │   └── ui/                # shadcn/ui components
-│   │   │   ├── layouts/
-│   │   │   │   └── BaseLayout.astro
-│   │   │   ├── pages/
-│   │   │   │   ├── index.astro        # Redirect to /en or /es
-│   │   │   │   ├── en/
-│   │   │   │   │   ├── index.astro    # EN homepage
-│   │   │   │   │   ├── about.astro
-│   │   │   │   │   ├── case-studies/
-│   │   │   │   │   │   ├── index.astro
-│   │   │   │   │   │   └── [slug].astro
-│   │   │   │   │   ├── skills.astro
-│   │   │   │   │   └── contact.astro
-│   │   │   │   ├── es/                # ES pages (same structure)
-│   │   │   │   ├── sitemap.xml.ts
-│   │   │   │   ├── sitemap-[lang].xml.ts
-│   │   │   │   └── api/               # Astro API routes
-│   │   │   │       └── contact.ts     # Contact form handler
-│   │   │   ├── i18n/
-│   │   │   │   ├── config.ts
-│   │   │   │   ├── locales/
-│   │   │   │   │   ├── en/
-│   │   │   │   │   │   ├── common.json
-│   │   │   │   │   │   ├── hero.json
-│   │   │   │   │   │   └── about.json
-│   │   │   │   │   └── es/            # Spanish translations
-│   │   │   │   └── schemas.ts         # Zod validation
-│   │   │   ├── lib/
-│   │   │   │   ├── animations/
-│   │   │   │   │   ├── config.ts
-│   │   │   │   │   ├── variants.ts
-│   │   │   │   │   ├── useScrollParallax.ts
-│   │   │   │   │   └── usePrefersReducedMotion.ts
-│   │   │   │   └── utils/
-│   │   │   ├── store/                 # Jotai atoms
-│   │   │   │   └── theme.ts
-│   │   │   ├── styles/
-│   │   │   │   ├── global.css
-│   │   │   │   └── themes.css         # Dark mode CSS variables
-│   │   │   └── content/               # Astro Content Collections
-│   │   │       ├── config.ts
-│   │   │       ├── case-studies/      # MDX files
-│   │   │       └── testimonials/      # JSON files
-│   │   ├── public/
-│   │   │   ├── images/
-│   │   │   ├── og/                    # Open Graph images
-│   │   │   ├── fonts/
-│   │   │   └── robots.txt
-│   │   ├── astro.config.mjs           # Astro config with i18n
-│   │   ├── tailwind.config.mjs
-│   │   └── package.json
-│   │
-│   ├── blog/                          # TanStack Start blog
-│   │   ├── app/
-│   │   │   ├── routes/
-│   │   │   │   ├── __root.tsx         # Root layout
-│   │   │   │   ├── index.tsx          # Blog listing
-│   │   │   │   ├── $lang/
-│   │   │   │   │   └── blog/
-│   │   │   │   │       ├── index.tsx  # Blog listing by lang
-│   │   │   │   │       └── $slug.tsx  # Blog post
-│   │   │   │   └── api/
-│   │   │   │       ├── linkedin/
-│   │   │   │       │   ├── auth.ts    # OAuth flow
-│   │   │   │       │   └── cross-post.ts
-│   │   │   │       └── rss/
-│   │   │   │           └── [lang].xml.ts
-│   │   │   └── components/
-│   │   │       ├── BlogPostList.tsx
-│   │   │       ├── BlogPostDetail.tsx
-│   │   │       └── MDXProvider.tsx
-│   │   ├── server/                    # Server-side logic
-│   │   │   ├── linkedin.ts
-│   │   │   └── mdx-loader.ts
-│   │   ├── content/
-│   │   │   └── blog/
-│   │   │       ├── en/                # English blog posts (MDX)
-│   │   │       └── es/                # Spanish blog posts (MDX)
-│   │   ├── sst.config.ts              # SST deployment config
-│   │   └── package.json
-│   │
-│   └── shared/                        # Shared utilities
-│       ├── types/
-│       │   ├── CaseStudy.ts
-│       │   ├── Skill.ts
-│       │   ├── Testimonial.ts
-│       │   ├── BlogPost.ts
-│       │   ├── LinkedInProfile.ts
-│       │   └── index.ts
-│       ├── utils/
-│       │   ├── validation.ts          # Zod schemas
-│       │   └── date.ts
-│       ├── components/                # Shared React components
-│       │   └── ui/                    # shadcn/ui (used by both apps)
-│       └── package.json
-│
-├── specs/                             # Feature specifications
-│   └── 001-modern-portfolio/
-│       ├── spec.md
-│       ├── plan.md
-│       ├── tasks.md
-│       ├── research.md
-│       ├── data-model.md
-│       ├── quickstart.md
-│       └── contracts/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-│
-├── package.json                       # Root package.json (workspace)
-├── pnpm-workspace.yaml                # Workspace config
-├── turbo.json                         # Turborepo config (optional)
-└── netlify.toml                       # Netlify config with redirects
-
-```
-
-### Routing Integration Strategy
-
-**Challenge**: Two separate apps need to work as one cohesive site
-
-**Solution**: Netlify redirects and proxy
-
-```toml
-# netlify.toml
-[[redirects]]
-  from = "/blog/*"
-  to = "https://blog.danielvalle.dev/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-**Deployment Flow**:
-1. Astro site deploys to Netlify (main domain: danielvalle.dev)
-2. TanStack Start blog deploys to AWS via SST (subdomain: blog.danielvalle.dev)
-3. Netlify proxy forwards `/blog/*` to TanStack Start app
-4. User sees seamless experience on single domain
-
----
-
-## 5. Missing Entity Definitions (Ready to Paste into spec.md)
-
-**Location**: Add to `spec.md` section "Key Entities" (after line 129)
-
-```markdown
-### Additional Entities (Post-Analysis)
-
-- **LinkedInProfile**: userId, displayName, headline, profileUrl, experience[], skills[], recommendations[], lastSyncedAt, cacheExpiresAt.
-- **LinkedInMessage**: messageId, recipientId, subject, body, sentAt, status (pending|sent|failed), retryCount.
-- **BlogComment**: commentId, postSlug, authorName, authorEmail, content, publishedAt, status (pending|approved|spam), parentCommentId (for threading).
-```
-
-**Full Updated Key Entities Section**:
-
-```markdown
-## Key Entities
-
-- **CaseStudy**: title, role, context, problem, approach, outcomes, metrics, tags, assets (architectureDiagramImage, gallery).
-- **Skill**: category, name, description, proficiency scale definition, related tags.
-- **Testimonial**: quote, sourceName, roleOrRelationship, organization, permissionGranted flag, consentDate, anonymizedTitle.
-- **ContactSubmission**: name, email, message, submittedAt, consent flags.
-- **BlogPost**: slug, title, description, content (markdown/MDX), publishDate, lastModified, author, tags, categories, language, status (draft|published), readingTimeMinutes, linkedInArticleId, canonicalUrl, coverImage.
-- **LinkedInProfile**: userId, displayName, headline, profileUrl, experience[], skills[], recommendations[], lastSyncedAt, cacheExpiresAt.
-- **LinkedInMessage**: messageId, recipientId, subject, body, sentAt, status (pending|sent|failed), retryCount.
-- **BlogComment**: commentId, postSlug, authorName, authorEmail, content, publishedAt, status (pending|approved|spam), parentCommentId (for threading).
-```
-
----
-
-## 6. Deployment Strategy Decision Tree
-
-```mermaid
-graph TD
-    Start[Choose Deployment Strategy] --> Q1{Single or Multi Platform?}
-    
-    Q1 -->|Single Platform| Single[Netlify Only]
-    Q1 -->|Multi Platform| Multi[Netlify + AWS SST]
-    
-    Single --> S1[Deploy Everything to Netlify]
-    S1 --> S2[Astro: Static Site + Edge Functions]
-    S2 --> S3[TanStack Start: Netlify Functions SSR]
-    S3 --> S4[Pros: Simpler, Single Deploy, Lower Cost]
-    S4 --> S5[Cons: Limited SSR Control, Cold Starts]
-    S5 --> Decision1{Choose This?}
-    
-    Multi --> M1[Astro to Netlify]
-    M1 --> M2[TanStack Start to AWS via SST]
-    M2 --> M3[Pros: Better SSR Performance, More Control]
-    M3 --> M4[Cons: Complex Deploy, Higher Cost, 2 Domains]
-    M4 --> Decision2{Choose This?}
-    
-    Decision1 -->|Yes| Config1[Configuration: Netlify Only]
-    Decision2 -->|Yes| Config2[Configuration: Multi-Cloud]
-    
-    Config1 --> N1[netlify.toml with redirects]
-    N1 --> N2[All functions in .netlify/functions/]
-    N2 --> N3[Single domain setup]
-    
-    Config2 --> A1[netlify.toml for Astro]
-    A1 --> A2[sst.config.ts for TanStack Start]
-    A2 --> A3[Proxy /blog/* to AWS]
-    A3 --> A4[Two separate CI/CD pipelines]
-```
-
-### Recommended Decision: **Netlify Only** (Single Platform)
+**Deployment Platform**: Netlify (single platform)
 
 **Rationale**:
 1. **Simplicity**: One deployment target, one domain, one CI/CD pipeline
-2. **Cost**: Netlify free tier covers portfolio needs; AWS adds minimum $5/mo
-3. **Performance**: Netlify Edge Functions are sufficient for blog SSR
-4. **Maintenance**: Fewer moving parts, easier troubleshooting
+2. **Cost**: Netlify free tier sufficient; avoids AWS minimum costs
+3. **Performance**: Edge Functions + CDN adequate for portfolio scale
+4. **Maintenance**: Fewer moving parts, simpler troubleshooting
 
-**Tradeoffs**:
-- Slightly less SSR control vs. AWS Lambda
-- Cold starts for low-traffic blog functions (acceptable for MVP)
+**Architecture Details**:
+- **Static Pages**: Astro SSG for home, about, case studies, skills (pre-rendered at build)
+- **Dynamic Blog**: Astro hybrid mode with Edge Functions for SSR
+- **API Routes**: Netlify Functions for contact form, LinkedIn OAuth, blog operations
+- **Content**: All managed via Astro Content Collections (single source of truth)
 
-**Implementation**:
-- Both Astro and TanStack Start deployed as single Netlify site
-- Astro handles `/`, `/en/*`, `/es/*`, `/case-studies/*`
-- TanStack Start handles `/blog/*` via Netlify Functions
-- Shared Tailwind CSS and component library
+**URL Structure**:
+- `/` → Static homepage (Astro)
+- `/en/`, `/es/` → Localized routes (Astro i18n)
+- `/en/case-studies/[slug]` → Static case study pages
+- `/en/blog/[slug]` → Dynamic blog posts (Astro hybrid SSR)
+- `/api/contact` → Netlify Function
+- `/api/linkedin/*` → Netlify Edge Functions (OAuth, sync)
 
----
+**Bundle Strategy**:
+- Static routes: <100KB JS (Astro zero-JS default + minimal React islands)
+- Blog routes: <180KB JS (Astro + MDX + interactive features)
+- Separate bundles per route via Vite code splitting
+```
 
-## Next Steps: Orchestrator Mode Workflow
+#### Required Task Modifications
 
-### Workflow Sequence
+**Remove tasks T066-T080** (TanStack Start blog tasks)
 
-1. **Create Remediation Branch**
-   ```bash
-   git checkout -b remediation/001-modern-portfolio-analysis-fixes
-   ```
+**Add replacement tasks in Phase 6**:
 
-2. **Execute Remediation Tasks in Order**
-   - Task 1: Update spec.md with clarification resolutions (FR-017, FR-018, FR-019)
-   - Task 2: Update spec.md with missing entities (LinkedInProfile, LinkedInMessage, BlogComment)
-   - Task 3: Execute find/replace for terminology standardization
-   - Task 4: Update plan.md with monorepo structure diagram
-   - Task 5: Update plan.md with deployment strategy decision
-   - Task 6: Update tasks.md with expanded task breakdowns (i18n, animations, dark mode, SEO, performance)
+```markdown
+## Phase 6: Blog Implementation (Astro Content Collections)
 
-3. **Validate Changes**
-   ```bash
-   # Re-run analysis to verify improvements
-   bash .specify/scripts/bash/check-prerequisites.sh --require-tasks
-   ```
+**Purpose**: Blog functionality using Astro's native content system
 
-4. **Commit and PR**
-   ```bash
-   git add specs/001-modern-portfolio/
-   git commit -m "feat(specs): resolve analysis findings for 001-modern-portfolio
+### Tests for Blog Implementation ⚠️
 
-- Resolve [NEEDS CLARIFICATION] items (FR-017, FR-018, FR-019)
-- Add missing entities (LinkedInProfile, LinkedInMessage, BlogComment)
-- Standardize terminology (projects → case-studies)
-- Clarify monorepo structure (Astro + TanStack Start)
-- Expand task coverage (i18n, animations, dark mode, SEO, performance)
-- Document deployment strategy (Netlify single-platform)"
+- [ ] T063 [P] [Blog] E2E test for blog listing in tests/e2e/blog.spec.ts
+- [ ] T064 [P] [Blog] Unit test for blog MDX component in tests/unit/components/BlogPost.test.tsx
+- [ ] T065 [P] [Blog] Integration test for blog content loading in tests/integration/blog-content.test.tsx
 
-   git push origin remediation/001-modern-portfolio-analysis-fixes
-   ```
+### Implementation for Blog
 
-5. **PR Review Checklist**
-   - [ ] All `[NEEDS CLARIFICATION]` resolved
-   - [ ] Terminology consistent across all files
-   - [ ] Task coverage gaps filled (i18n, animations, dark mode, SEO, perf)
-   - [ ] Entity definitions complete
-   - [ ] Architecture decisions documented
-   - [ ] No constitutional violations introduced
+- [ ] T066 [P] [Blog] Configure Astro Content Collections for blog in src/content/config.ts
+- [ ] T067 [P] [Blog] Create blog post schema with Zod validation in src/content/config.ts
+- [ ] T068 [P] [Blog] Create blog listing page in src/pages/[lang]/blog/index.astro
+- [ ] T069 [P] [Blog] Create blog post detail page in src/pages/[lang]/blog/[slug].astro
+- [ ] T070 [P] [Blog] Create MDX components provider in src/components/mdx/MDXComponents.astro
+- [ ] T071 [Blog] Implement blog search using Pagefind in src/pages/[lang]/blog/search.astro
+- [ ] T072 [Blog] Add blog tagging and filtering in src/components/BlogFilters.astro
+- [ ] T073 [Blog] Create RSS feed generation in src/pages/[lang]/rss.xml.ts
+- [ ] T074 [Blog] Implement LinkedIn cross-posting function in netlify/functions/linkedin-crosspost.ts
+- [ ] T075 [Blog] Add blog comment system using Netlify Functions in netlify/functions/comments.ts
+- [ ] T076 [Blog] Integrate blog with main site navigation in src/components/Navigation.astro
+```
 
 ---
 
-## Estimated Effort
+### Issue A3: Blog Cross-Posting API Ambiguity
 
-- **Clarification Decisions**: 30 minutes (review options, make decisions)
-- **Spec Updates**: 1 hour (add entities, update requirements)
-- **Terminology Standardization**: 30 minutes (find/replace + verification)
-- **Plan Updates**: 1 hour (structure diagram, deployment strategy)
-- **Task Expansion**: 1.5 hours (write 25+ new subtasks)
-- **Validation**: 30 minutes (re-run analysis, verify fixes)
+**Severity**: HIGH  
+**Location**: [`spec.md:99-107`](spec.md:99-107), [`tasks.md:166-185`](tasks.md:166-185)  
+**Problem**: Unclear which LinkedIn API to use for blog cross-posting (Messaging vs Share vs Publishing)
 
-**Total**: ~4.5 hours for complete remediation
+#### Recommended Fix for research.md
+
+Add new section to `specs/001-modern-portfolio/research.md`:
+
+```markdown
+## LinkedIn Blog Cross-Posting Strategy (FR-036, FR-037)
+
+### Requirement
+> FR-036: The blog MUST automatically cross-post or sync published articles to LinkedIn using the LinkedIn Publishing API.
+> FR-037: LinkedIn cross-posting MUST preserve article formatting, include canonical URL back to portfolio, and handle both new publications and updates.
+
+### Research Question
+Which LinkedIn API should be used for automated blog cross-posting?
+
+### Options Evaluated
+
+**Option 1: LinkedIn Publishing API (DEPRECATED)**
+- **Status**: Deprecated as of 2023; no longer available for new applications
+- **Verdict**: ❌ Not viable
+
+**Option 2: LinkedIn Share API (UGC Posts)**
+- **Endpoint**: `POST https://api.linkedin.com/v2/ugcPosts`
+- **Scope Required**: `w_member_social`
+- **Content Limit**: 3,000 characters
+- **Formatting**: Plain text + link preview
+- **Pros**: Simple, reliable, officially supported
+- **Cons**: Cannot post full articles; only link + excerpt
+- **Verdict**: ✅ **RECOMMENDED** for MVP
+
+**Option 3: LinkedIn Messaging API (Direct Message)**
+- **Endpoint**: `POST https://api.linkedin.com/v2/messages`
+- **Scope Required**: `w_member_social`
+- **Cons**: Requires recipient IDs; not suitable for public broadcasting
+- **Verdict**: ❌ Not applicable for blog broadcasting
+
+### Decision: Hybrid Approach
+
+**Primary Strategy**: Use Share API (UGC Posts) with link preview
+1. Detect new blog post publication
+2. Generate excerpt (first 280 characters)
+3. Post to LinkedIn with:
+   - Excerpt as post text
+   - Canonical URL as link
+   - Featured image as preview
+   - Hashtags from post tags
+
+**Implementation Details**:
+```typescript
+// netlify/functions/linkedin-crosspost.ts
+export const crossPostToLinkedIn = async (post: BlogPost) => {
+  const excerpt = generateExcerpt(post.content, 280);
+  const ugcPost = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_URN}`,
+    lifecycleState: 'PUBLISHED',
+    specificContent: {
+      'com.linkedin.ugc.ShareContent': {
+        shareCommentary: {
+          text: `${excerpt}\n\nRead more: ${post.canonicalUrl}\n\n${post.tags.map(t => `#${t}`).join(' ')}`
+        },
+        shareMediaCategory: 'ARTICLE',
+        media: [{
+          status: 'READY',
+          originalUrl: post.canonicalUrl,
+          title: { text: post.title },
+          description: { text: post.description },
+        }]
+      }
+    },
+    visibility: {
+      'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+    }
+  };
+  
+  return await linkedInClient.post('/v2/ugcPosts', ugcPost);
+};
+```
+
+**Fallback Strategy**: Manual sharing with notification
+- If auto-post fails, send email notification with pre-filled LinkedIn share link
+- User can manually share with full control over wording
+
+**Update Handling** (FR-037):
+- LinkedIn API does not support editing posts
+- Strategy: Delete original post and re-post with "[Updated]" prefix
+- Track LinkedIn post ID in blog frontmatter for update detection
+
+### References
+- [LinkedIn UGC Posts API](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api)
+- [LinkedIn Share API Migration Guide](https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin)
+```
+
+#### Required Specification Clarification
+
+Update [`spec.md`](spec.md) lines 104-105:
+
+**Replace:**
+```markdown
+- FR-036: The blog MUST automatically cross-post or sync published articles to LinkedIn using the LinkedIn Publishing API.
+```
+
+**With:**
+```markdown
+- FR-036: The blog MUST automatically cross-post published articles to LinkedIn using the UGC Posts API (Share API) with article link preview, excerpt (≤280 chars), and hashtags.
+```
 
 ---
 
-**End of Remediation Plan**
+### Issue A4: Animation System Specification Gap
+
+**Severity**: HIGH  
+**Location**: [`spec.md:109-114`](spec.md:109-114), [`plan.md:27`](plan.md:27)  
+**Problem**: "Comprehensive animation system" lacks measurable performance criteria
+
+#### Recommended Fix for spec.md
+
+**Replace lines 109-114** with:
+
+```markdown
+- FR-041: The site MUST implement a progressive animation system using Framer Motion with the following performance criteria:
+  - Initial animation bundle: ≤12KB gzipped (lazy loaded per route)
+  - Animation frame rate: ≥60 FPS on modern devices, ≥30 FPS on low-end devices
+  - Layout shift (CLS): <0.05 for animated transitions
+  - Time to Interactive (TTI) impact: ≤200ms additional delay per animated route
+- FR-042: Animations MUST include scroll-based effects (parallax, fade-in on scroll), staggered list animations (≤50ms delay between items), interactive hover states (≤16ms response), and smooth page transitions (200-300ms duration).
+- FR-043: All animations MUST respect the `prefers-reduced-motion` media query by providing instant transitions (0ms duration) or minimal fade effects (≤100ms) for users who prefer reduced motion.
+- FR-044: The animation system MUST use code splitting to load animation variants on-demand, ensuring base page load includes only critical animations (hero section only).
+- FR-045: Animation bundle size MUST be monitored in CI with failure threshold at 15KB gzipped total across all routes; individual route animation code must not exceed 8KB gzipped.
+- FR-046: Interactive elements MUST provide visual feedback within 100ms (button press, form focus states, loading indicators) using CSS transforms and opacity changes for hardware acceleration.
+- FR-047: Page transitions MUST preserve scroll position for back navigation and provide loading progress indication for transitions exceeding 150ms.
+```
+
+#### Required Task Addition
+
+Add to Phase 8 (Animation subtasks) after T106:
+
+```markdown
+- [ ] T106b [P] [Animation] Configure Framer Motion lazy loading strategy in shared/animations/lazy-loader.ts
+- [ ] T106c [P] [Animation] Implement animation performance monitoring (FPS, CLS) in shared/utils/animation-metrics.ts
+- [ ] T115b [P] [Animation] Add animation bundle size test (≤15KB total) in tests/performance/animation-bundle.spec.ts
+```
+
+---
+
+## Priority 2: Missing Feature Coverage
+
+### Missing Tasks for FR-016 (Resume Download)
+
+**Add to Phase 3 (User Story 1) after T034:**
+
+```markdown
+- [ ] T034b [P] [US1] Create resume component in src/components/Resume.astro
+- [ ] T034c [P] [US1] Add resume download endpoint in src/pages/api/resume/download.ts
+- [ ] T034d [US1] Integrate resume link in hero section and navigation
+- [ ] T034e [P] [US1] E2E test for resume download in tests/e2e/resume.spec.ts
+```
+
+### Missing Tasks for FR-017 (Google Calendar Integration)
+
+**Add new Phase 7b after LinkedIn Integration:**
+
+```markdown
+## Phase 7b: Google Calendar Integration (FR-017)
+
+**Purpose**: "Schedule a Call" button with Google Calendar appointment booking
+
+### Tests ⚠️
+
+- [ ] T093b [P] [Calendar] E2E test for calendar booking flow in tests/e2e/calendar.spec.ts
+- [ ] T093c [P] [Calendar] Unit test for Google Calendar API client in tests/unit/lib/GoogleCalendar.test.ts
+
+### Implementation
+
+- [ ] T093d [P] [Calendar] Setup Google Calendar API OAuth in netlify/edge-functions/google-oauth.ts
+- [ ] T093e [P] [Calendar] Create calendar availability checker in netlify/functions/calendar-availability.ts
+- [ ] T093f [P] [Calendar] Implement appointment booking in netlify/functions/calendar-book.ts
+- [ ] T093g [P] [Calendar] Create "Schedule a Call" UI component in src/components/ScheduleCall.astro
+- [ ] T093h [Calendar] Add calendar booking to contact page in src/pages/[lang]/contact.astro
+- [ ] T093i [P] [Calendar] Configure time zone handling for multi-region bookings
+- [ ] T093j [P] [Calendar] Add booking confirmation emails via Netlify Forms
+```
+
+### Missing Tasks for FR-018 (Privacy-Preserving Analytics)
+
+**Add to Phase 8 after T166:**
+
+```markdown
+- [ ] T166b [P] [Analytics] Setup Plausible Analytics account and script tag
+- [ ] T166c [P] [Analytics] Configure Plausible proxy through Netlify Edge Functions in netlify/edge-functions/analytics-proxy.ts
+- [ ] T166d [Analytics] Add Plausible tracking script to BaseLayout in src/layouts/BaseLayout.astro
+- [ ] T166e [P] [Analytics] Implement custom event tracking for portfolio interactions in shared/utils/track-event.ts
+- [ ] T166f [P] [Analytics] Add GDPR-compliant analytics notice to privacy policy
+- [ ] T166g [P] [Analytics] Configure analytics fallback to Google Analytics if Plausible unavailable
+```
+
+### Missing Tasks for FR-019 (LinkedIn Recommendations Import)
+
+**Add to Phase 7 after T093:**
+
+```markdown
+- [ ] T093k [P] [LinkedIn] Implement LinkedIn Recommendations fetch in src/lib/LinkedInClient.ts
+- [ ] T093l [P] [LinkedIn] Create recommendations display component in src/components/LinkedInRecommendations.astro
+- [ ] T093m [LinkedIn] Add recommendations section to testimonials page in src/pages/[lang]/testimonials.astro
+- [ ] T093n [P] [LinkedIn] Add recommendation caching with 7-day TTL
+- [ ] T093o [P] [LinkedIn] E2E test for recommendations display in tests/e2e/linkedin-recommendations.spec.ts
+```
+
+### Missing Tasks for FR-002 (About Page)
+
+**Add to Phase 3 after T034:**
+
+```markdown
+- [ ] T034f [P] [US1] Create About page in src/pages/[lang]/about.astro
+- [ ] T034g [P] [US1] Create career timeline component in src/components/CareerTimeline.astro
+- [ ] T034h [US1] Add LinkedIn profile integration to About page
+- [ ] T034i [P] [US1] E2E test for About page content in tests/e2e/about.spec.ts
+```
+
+---
+
+## Summary of Changes
+
+### Files to Modify
+1. **plan.md**: Update Technical Context (lines 16-39), remove TanStack Start sections, add Unified Deployment Architecture
+2. **spec.md**: Clarify FR-036 (LinkedIn API), expand FR-041-047 (animation criteria)
+3. **tasks.md**: Remove T066-T080, add replacement Astro blog tasks, add 24 new tasks for missing features
+4. **research.md**: Add LinkedIn cross-posting strategy decision
+
+### Files to Create
+1. **contracts/linkedin-api.schema.ts**: Complete LinkedIn API contract with OAuth, caching, rate limits
+
+### Task Count Impact
+- **Removed**: 15 tasks (TanStack Start blog)
+- **Added**: 39 tasks (replacement blog + missing features)
+- **Net Change**: +24 tasks (total: 192 tasks)
+
+### Next Steps
+
+1. Review and approve this remediation plan
+2. Apply edits to plan.md and spec.md
+3. Update tasks.md with new and modified tasks
+4. Create contracts/linkedin-api.schema.ts
+5. Update research.md with LinkedIn API decision
+6. Re-run analysis to verify all critical issues resolved
+
+---
+
+**Status**: Ready for review and implementation
+**Estimated Remediation Time**: 2-3 hours for all edits
+**Risk**: LOW - All changes are additive or clarifying; no breaking changes to existing work

@@ -33,7 +33,7 @@ Independent Test: A user can open any case study and find role, problem, approac
 
 Acceptance Scenarios:
 
-1. Given the projects page, When the user opens a project, Then they can see role, challenges, architecture diagram, and measurable outcomes.
+1. Given the case studies page, When the user opens a case study, Then they can see role, challenges, architecture diagram, and measurable outcomes.
 2. Given the case studies list, When the user filters or scans, Then they can locate work relevant to healthcare and security.
 
 ---
@@ -81,9 +81,9 @@ Acceptance Scenarios:
 - FR-014: The site MUST maintain a performance budget with per-route transferred JavaScript ≤ 200 KB compressed.
 - FR-015: The site MUST meet accessibility basics: keyboard navigability, focus visible, color contrast meeting WCAG 2.1 AA for text and UI components, and alt text for meaningful images.
 - FR-016: The site MUST provide the ability to view or download an up-to-date resume.
-- FR-017: The site SHOULD offer an optional bookings link for scheduling conversations. [NEEDS CLARIFICATION]
-- FR-018: The site SHOULD record basic privacy-preserving analytics for page views and conversions. [NEEDS CLARIFICATION]
-- FR-019: Testimonials MUST be attributable where permission is granted; provide anonymized titles if not. [NEEDS CLARIFICATION]
+- FR-017: The site MUST provide a 'Schedule a Call' button linked to Google Calendar, allowing visitors to request and confirm meeting slots directly within configurable time windows.
+- FR-018: The site MUST integrate an open-source, privacy-preserving analytics platform such as Plausible or Umami. If unavailable, fallback to Google Analytics.
+- FR-019: The site MUST import testimonials directly from LinkedIn Recommendations using the LinkedIn API, maintaining user privacy through anonymization or public attribution in accordance with profile privacy settings.
 - FR-020: The site MUST integrate with LinkedIn API to automatically fetch and display professional experience, skills, and recommendations.
 - FR-021: LinkedIn data MUST be cached client-side or server-side to meet performance requirements (LCP ≤ 2.5s, JS ≤ 200KB per route).
 - FR-022: The site MUST provide a fallback UI state when LinkedIn API is unavailable or rate-limited.
@@ -100,18 +100,22 @@ Acceptance Scenarios:
 - FR-033: Blog posts MUST support frontmatter metadata including title, description, publish date, author, tags, categories, language, and publish status (draft/published).
 - FR-034: The site MUST provide a blog listing page showing published posts with pagination, filtering by tags/categories, and search functionality.
 - FR-035: Individual blog posts MUST have dedicated routes with SEO-optimized URLs, proper meta tags, reading time estimation, and social sharing capabilities.
-- FR-036: The blog MUST automatically cross-post or sync published articles to LinkedIn using the LinkedIn Publishing API.
+- FR-036: The blog MUST automatically cross-post published articles to LinkedIn using the UGC Posts API (Share API) with article link preview, excerpt (≤280 chars), and hashtags.
 - FR-037: LinkedIn cross-posting MUST preserve article formatting, include canonical URL back to portfolio, and handle both new publications and updates.
 - FR-038: The blog MUST generate an RSS/Atom feed for subscribers in both English and Spanish.
 - FR-039: Blog posts MUST support bilingual content with language-specific routes and proper hreflang implementation.
 - FR-040: The site MUST provide a blog authoring workflow (file-based or admin interface) with preview capability before publishing.
-- FR-041: The site MUST implement a comprehensive animation system using Framer Motion for rich micro-interactions throughout the interface.
-- FR-042: Animations MUST include scroll-based parallax effects, staggered animations for list items, interactive hover states, and smooth page transitions.
-- FR-043: All animations MUST respect the `prefers-reduced-motion` media query, providing instant or minimal transitions for users who prefer reduced motion.
-- FR-044: The animation system MUST be compatible with Tailwind CSS utility classes and integrate seamlessly with shadcn/ui components.
-- FR-045: Animation performance MUST be monitored to ensure compliance with performance budgets (JS ≤ 200KB per route, LCP ≤ 2.5s, CLS < 0.1).
-- FR-046: Interactive elements MUST provide immediate visual feedback through micro-interactions (button presses, form focus states, loading indicators).
-- FR-047: Page transitions MUST be smooth and contextual, preserving user scroll position where appropriate.
+- FR-041: The site MUST implement a progressive animation system using Framer Motion with the following performance criteria:
+  - Initial animation bundle: ≤12KB gzipped (lazy loaded per route)
+  - Animation frame rate: ≥60 FPS on modern devices, ≥30 FPS on low-end devices
+  - Layout shift (CLS): <0.05 for animated transitions
+  - Time to Interactive (TTI) impact: ≤200ms additional delay per animated route
+- FR-042: Animations MUST include scroll-based effects (parallax, fade-in on scroll), staggered list animations (≤50ms delay between items), interactive hover states (≤16ms response), and smooth page transitions (200-300ms duration).
+- FR-043: All animations MUST respect the `prefers-reduced-motion` media query by providing instant transitions (0ms duration) or minimal fade effects (≤100ms) for users who prefer reduced motion.
+- FR-044: The animation system MUST use code splitting to load animation variants on-demand, ensuring base page load includes only critical animations (hero section only).
+- FR-045: Animation bundle size MUST be monitored in CI with failure threshold at 15KB gzipped total across all routes; individual route animation code must not exceed 8KB gzipped.
+- FR-046: Interactive elements MUST provide visual feedback within 100ms (button press, form focus states, loading indicators) using CSS transforms and opacity changes for hardware acceleration.
+- FR-047: Page transitions MUST preserve scroll position for back navigation and provide loading progress indication for transitions exceeding 150ms.
 - FR-048: Skills section MUST display core information statically for immediate scanning, with optional interactive filtering by category, technology stack, or proficiency level.
 - FR-049: Skills visualization MUST include animated proficiency indicators (charts, progress bars, or visual metrics) that respect `prefers-reduced-motion`.
 - FR-050: Career timeline MUST present work history in chronological order with key information visible by default (company, role, dates, brief description).
@@ -123,22 +127,25 @@ Acceptance Scenarios:
 ### Key Entities
 
 - CaseStudy: title, role, context, problem, approach, outcomes, metrics, tags, assets architectureDiagramImage, gallery.
+- BlogComment: commentId, postSlug, authorName, authorEmail, content, publishedAt, status (pending|approved|spam), parentCommentId (for threading).
+- BlogPost: slug, title, description, content (markdown/MDX), publishDate, lastModified, author, tags, categories, language, status (draft/published), readingTimeMinutes, linkedInArticleId, canonicalUrl, coverImage.
+- ContactSubmission: name, email, message, submittedAt, consent flags.
+- LinkedInMessage: messageId, recipientId, subject, body, sentAt, status (pending|sent|failed), retryCount.
+- LinkedInProfile: userId, displayName, headline, profileUrl, experience[], skills[], recommendations[], lastSyncedAt, cacheExpiresAt.
 - Skill: category, name, description, proficiency scale definition, related tags.
 - Testimonial: quote, sourceName, roleOrRelationship, organization, permissionGranted flag.
-- ContactSubmission: name, email, message, submittedAt, consent flags.
-- BlogPost: slug, title, description, content (markdown/MDX), publishDate, lastModified, author, tags, categories, language, status (draft/published), readingTimeMinutes, linkedInArticleId, canonicalUrl, coverImage.
 
 ## Success Criteria (mandatory)
 
 ### Measurable Outcomes
 
-- SC-001: On a production build, mobile Lighthouse Performance score ≥ 90 for the home, about, projects, and contact pages.
+- SC-001: On a production build, mobile Lighthouse Performance score ≥ 90 for the home, about, case studies, and contact pages.
 - SC-002: Across the case studies, at least three distinct, quantified outcome metrics are displayed to users.
 - SC-003: Contact form: with valid inputs, users receive an on-page success confirmation within 2 seconds on a typical 4G connection; with invalid inputs, users receive specific, actionable error messages.
 - SC-004: Accessibility: All interactive elements are reachable and operable via keyboard; no keyboard traps; visible focus indicator on every interactive element; text and UI component contrast meet WCAG 2.1 AA.
 - SC-005: Dark mode: Users can toggle theme and the chosen theme persists on subsequent visits; content remains legible and maintains AA contrast.
 - SC-006: SEO: Each primary page has a unique human-readable title and meta description, and when shared, renders a correct social preview title and image.
-- SC-007: Core Web Vitals p75 on mobile meet LCP ≤ 2.5s, INP < 200ms, CLS < 0.1 for the home and projects pages.
+- SC-007: Core Web Vitals p75 on mobile meet LCP ≤ 2.5s, INP < 200ms, CLS < 0.1 for the home and case studies pages.
 - SC-008: Responsive: At viewport widths 360, 768, 1024, and 1440, no horizontal scrolling occurs; primary content and controls are unobscured; images do not overflow their containers.
 
 ## Clarifications
@@ -169,7 +176,6 @@ Acceptance Scenarios:
 **Question**: What level of animations and micro-interactions should the portfolio include?
 **Answer**: Rich micro-interactions with Framer Motion - Comprehensive animation system with scroll-based parallax, staggered animations, interactive hover effects, and smooth page transitions using Framer Motion library. Must be compatible with Tailwind CSS and shadcn/ui components.
 **Impact**: Added FR-041 through FR-047 covering Framer Motion integration (~30KB gzipped), scroll-based parallax and staggered animations, interactive hover states, smooth page transitions, `prefers-reduced-motion` accessibility support, Tailwind CSS and shadcn/ui compatibility, performance monitoring, and immediate visual feedback for interactive elements.
-
 
 <!-- Notes:
 - This specification intentionally avoids prescribing technologies or implementation details.

@@ -562,6 +562,76 @@ interface LinkedInMessage {
 
 ---
 
+## 3a. LinkedIn Blog Cross-Posting Strategy
+
+### Decision
+Use the **UGC Posts API (Share API)** for blog cross-posting, focusing on sharing a link to the canonical blog post with a title, a short excerpt (≤280 characters), and relevant hashtags.
+
+### Rationale
+
+1.  **API Simplification & Stability**: The UGC Posts API is a stable, well-documented endpoint for sharing content. The Articles API, which allows for publishing full native articles, has stricter access requirements and is more complex to implement. Focusing on the UGC Posts API is a more robust and achievable initial goal.
+
+2.  **SEO & Canonical Source**: Driving traffic back to the portfolio website is a primary goal. Sharing a link to the blog post ensures the portfolio remains the canonical source, which is beneficial for SEO. Native articles on LinkedIn would create duplicate content, potentially harming search rankings.
+
+3.  **User Experience**: A link share with a compelling preview is a common and effective pattern on LinkedIn. Users can click through to the full article, providing a better reading experience with custom styling, components, and code blocks that are not possible in LinkedIn's native article editor.
+
+4.  **Content Ownership**: Keeping the full content on the personal blog ensures complete ownership and control over the material.
+
+### Implementation Strategy
+
+**API Endpoint**: `https://api.linkedin.com/v2/ugcPosts`
+
+**Request Body Structure**:
+```json
+{
+    "author": "urn:li:person:{personId}",
+    "lifecycleState": "PUBLISHED",
+    "specificContent": {
+        "com.linkedin.ugc.ShareContent": {
+            "shareCommentary": {
+                "text": "New blog post: {Blog Post Title} - {Excerpt, max 280 chars} #hashtag1 #hashtag2"
+            },
+            "shareMediaCategory": "ARTICLE",
+            "media": [
+                {
+                    "status": "READY",
+                    "description": {
+                        "text": "{Blog post meta description}"
+                    },
+                    "originalUrl": "{Canonical URL of the blog post}",
+                    "title": {
+                        "text": "{Blog Post Title}"
+                    }
+                }
+            ]
+        }
+    },
+    "visibility": {
+        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+    }
+}
+```
+
+**Fallback/Error Handling**:
+
+*   If the API call fails, the system should log the error and queue the post for a retry (e.g., in a Netlify KV store).
+*   A manual "Share on LinkedIn" button will be available in the blog admin interface as a fallback, which will open a `linkedin.com/sharing/share-offsite/` URL with pre-populated content.
+
+### Alternatives Considered
+
+| Option | Pros | Cons | Decision |
+| :--- | :--- | :--- | :--- |
+| **Articles API** | Publishes full native articles on LinkedIn. | Stricter API access, complex implementation, creates duplicate content. | Rejected: Overly complex for initial implementation and negative SEO impact. |
+| **Manual Sharing** | No API integration needed. | Inefficient, error-prone, doesn't showcase automation skills. | Rejected: Fails to meet the project's goal of demonstrating technical capabilities. |
+| **UGC Posts API (Link Share)** | Drives traffic to the canonical source, simpler API, good for SEO. | Doesn't provide the full reading experience directly on LinkedIn. | **SELECTED**: Aligns with project goals of demonstrating skill while maintaining content ownership and SEO. |
+
+### References
+
+*   [Official UGC Posts API Documentation](https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin#create-a-share-on-linkedin)
+*   [Postman Collection for LinkedIn APIs](https://www.postman.com/linkedin-developer-apis/linkedin-marketing-solutions-versioned-apis)
+
+---
+
 ## 3. Internationalization (i18n): react-i18next
 
 ### Decision

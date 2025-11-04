@@ -90,6 +90,14 @@ description: "Task list for Modern Portfolio feature implementation"
 - [ ] T032 [US1] Add animations with Framer Motion
 - [ ] T033 [US1] Add error handling for contact form submission
 - [ ] T034 [US1] Add logging for user interactions
+- [ ] T034b [P] [US1] Create resume component in src/components/Resume.astro
+- [ ] T034c [P] [US1] Add resume download endpoint in src/pages/api/resume/download.ts
+- [ ] T034d [US1] Integrate resume link in hero section and navigation
+- [ ] T034e [P] [US1] E2E test for resume download in tests/e2e/resume.spec.ts
+- [ ] T034f [P] [US1] Create About page in src/pages/[lang]/about.astro
+- [ ] T034g [P] [US1] Create career timeline component in src/components/CareerTimeline.astro
+- [ ] T034h [US1] Add LinkedIn profile integration to About page
+- [ ] T034i [P] [US1] E2E test for About page content in tests/e2e/about.spec.ts
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -112,7 +120,7 @@ description: "Task list for Modern Portfolio feature implementation"
 - [ ] T038 [P] [US2] Create CaseStudy model in shared/types/CaseStudy.ts
 - [ ] T039 [P] [US2] Create Skill model in shared/types/Skill.ts
 - [ ] T040 [P] [US2] Create case study card component in src/components/CaseStudyCard.astro
-- [ ] T041 [P] [US2] Create skills showcase component in src/components/SkillsShowcase.astro
+- [ ] T041 [P] [US2] Create skills visualization component in src/components/SkillsVisualization.astro
 - [ ] T042 [US2] Implement case studies page in src/pages/case-studies.astro (depends on T038, T039, T040, T041)
 - [ ] T043 [US2] Create case study detail page in src/pages/case-studies/[slug].astro
 - [ ] T044 [US2] Add filtering functionality for case studies
@@ -155,33 +163,29 @@ description: "Task list for Modern Portfolio feature implementation"
 
 ---
 
-## Phase 6: Blog Implementation (TanStack Start)
+## Phase 6: Blog Implementation (Astro Content Collections)
 
-**Purpose**: Dynamic blog functionality with server-side rendering
+**Purpose**: Blog functionality using Astro's native content system
 
 ### Tests for Blog Implementation ⚠️
 
 - [ ] T063 [P] [Blog] E2E test for blog listing in tests/e2e/blog.spec.ts
-- [ ] T064 [P] [Blog] Unit test for blog post component in tests/unit/components/BlogPost.test.tsx
-- [ ] T065 [P] [Blog] Integration test for blog server functions in tests/integration/blog.test.tsx
+- [ ] T064 [P] [Blog] Unit test for blog MDX component in tests/unit/components/BlogPost.test.tsx
+- [ ] T065 [P] [Blog] Integration test for blog content loading in tests/integration/blog-content.test.tsx
 
 ### Implementation for Blog
 
-- [ ] T066 [P] [Blog] Create BlogPost model in shared/types/BlogPost.ts
-- [ ] T067 [P] [Blog] Create BlogComment model in shared/types/BlogComment.ts
-- [ ] T068 [P] [Blog] Setup TanStack Start project structure in blog/
-- [ ] T069 [P] [Blog] Create blog post listing component in blog/components/BlogPostList.tsx
-- [ ] T070 [P] [Blog] Create blog post detail component in blog/components/BlogPostDetail.tsx
-- [ ] T071 [P] [Blog] Create comment component in blog/components/CommentSection.tsx
-- [ ] T072 [Blog] Implement blog server functions in blog/server/blog.ts
-- [ ] T073 [Blog] Implement comment server functions in blog/server/comments.ts
-- [ ] T074 [Blog] Create blog routes in blog/app/routes/blog.tsx
-- [ ] T075 [Blog] Create blog post routes in blog/app/routes/blog.$slug.tsx
-- [ ] T076 [Blog] Add MDX support for blog content
-- [ ] T077 [Blog] Add blog search functionality
-- [ ] T078 [Blog] Add blog categorization and tagging
-- [ ] T079 [Blog] Add comment moderation system
-- [ ] T080 [Blog] Integrate blog with main site navigation
+- [ ] T066 [P] [Blog] Configure Astro Content Collections for blog in src/content/config.ts
+- [ ] T067 [P] [Blog] Create blog post schema with Zod validation in src/content/config.ts
+- [ ] T068 [P] [Blog] Create blog listing page in src/pages/[lang]/blog/index.astro
+- [ ] T069 [P] [Blog] Create blog post detail page in src/pages/[lang]/blog/[slug].astro
+- [ ] T070 [P] [Blog] Create MDX components provider in src/components/mdx/MDXComponents.astro
+- [ ] T071 [Blog] Implement blog search using Pagefind in src/pages/[lang]/blog/search.astro
+- [ ] T072 [Blog] Add blog tagging and filtering in src/components/BlogFilters.astro
+- [ ] T073 [Blog] Create RSS feed generation in src/pages/[lang]/rss.xml.ts
+- [ ] T074 [Blog] Implement LinkedIn cross-posting function in netlify/functions/linkedin-crosspost.ts
+- [ ] T075 [Blog] Add blog comment system using Netlify Functions in netlify/functions/comments.ts
+- [ ] T076 [Blog] Integrate blog with main site navigation in src/components/Navigation.astro
 
 ---
 
@@ -207,6 +211,32 @@ description: "Task list for Modern Portfolio feature implementation"
 - [ ] T091 [LinkedIn] Add rate limiting for LinkedIn APIs
 - [ ] T092 [LinkedIn] Add error handling for LinkedIn integration
 - [ ] T093 [LinkedIn] Add logging for LinkedIn operations
+- [ ] T093k [P] [LinkedIn] Implement LinkedIn Recommendations fetch in src/lib/LinkedInClient.ts
+- [ ] T093l [P] [LinkedIn] Create recommendations display component in src/components/LinkedInRecommendations.astro
+- [ ] T093m [LinkedIn] Add recommendations section to testimonials page in src/pages/[lang]/testimonials.astro
+- [ ] T093n [P] [LinkedIn] Add recommendation caching with 7-day TTL
+- [ ] T093o [P] [LinkedIn] E2E test for recommendations display in tests/e2e/linkedin-recommendations.spec.ts
+
+---
+
+## Phase 7b: Google Calendar Integration (FR-017)
+
+**Purpose**: "Schedule a Call" button with Google Calendar appointment booking
+
+### Tests ⚠️
+
+- [ ] T093b [P] [Calendar] E2E test for calendar booking flow in tests/e2e/calendar.spec.ts
+- [ ] T093c [P] [Calendar] Unit test for Google Calendar API client in tests/unit/lib/GoogleCalendar.test.ts
+
+### Implementation
+
+- [ ] T093d [P] [Calendar] Setup Google Calendar API OAuth in netlify/edge-functions/google-oauth.ts
+- [ ] T093e [P] [Calendar] Create calendar availability checker in netlify/functions/calendar-availability.ts
+- [ ] T093f [P] [Calendar] Implement appointment booking in netlify/functions/calendar-book.ts
+- [ ] T093g [P] [Calendar] Create "Schedule a Call" UI component in src/components/ScheduleCall.astro
+- [ ] T093h [Calendar] Add calendar booking to contact page in src/pages/[lang]/contact.astro
+- [ ] T093i [P] [Calendar] Configure time zone handling for multi-region bookings
+- [ ] T093j [P] [Calendar] Add booking confirmation emails via Netlify Forms
 
 ---
 
@@ -214,24 +244,109 @@ description: "Task list for Modern Portfolio feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T094 [P] Update documentation in docs/
-- [ ] T095 [P] Code cleanup and refactoring
-- [ ] T096 Performance optimization across all stories
-- [ ] T097 [P] Additional unit tests in tests/unit/
-- [ ] T098 [P] Additional integration tests in tests/integration/
-- [ ] T099 Security hardening (CSRF protection, XSS prevention)
-- [ ] T100 [P] Accessibility audit and improvements
-- [ ] T101 SEO optimization for all pages
-- [ ] T102 [P] Add sitemap generation
-- [ ] T103 [P] Add robots.txt configuration
-- [ ] T104 Run quickstart.md validation
-- [ ] T105 [P] Add error boundaries for React components
-- [ ] T106 [P] Add loading states and skeleton screens
-- [ ] T107 [P] Add offline support with service workers
-- [ ] T108 [P] Add analytics tracking
-- [ ] T109 [P] Add performance monitoring
-- [ ] T110 [P] Add deployment configuration for Netlify
-- [ ] T111 [P] Add deployment configuration for SST (blog)
+### Internationalization (i18n) Subtasks
+
+- [ ] T094 [P] [i18n] Configure react-i18next namespaces in shared/i18n/config.ts
+- [ ] T095 [P] [i18n] Create English translations file in shared/i18n/locales/en/common.json
+- [ ] T096 [P] [i18n] Create Spanish translations file in shared/i18n/locales/es/common.json
+- [ ] T097 [P] [i18n] Add language switcher component in src/components/LanguageSwitcher.astro
+- [ ] T098 [i18n] Configure Astro i18n routing in astro.config.mjs (defaultLocale: 'en', locales: ['en', 'es'])
+- [ ] T099 [i18n] Add hreflang tags to BaseLayout in src/layouts/BaseLayout.astro
+- [ ] T100 [P] [i18n] Create translation helper utilities in shared/utils/i18n.ts
+- [ ] T101 [P] [i18n] Add locale detection middleware in netlify/edge-functions/locale-detection.ts
+- [ ] T102 [i18n] Update navigation component with translated menu items in src/components/Navigation.astro
+- [ ] T103 [i18n] Add language-specific SEO meta tags in src/components/SEO.astro
+- [ ] T104 [P] [i18n] E2E test for language switching in tests/e2e/i18n.spec.ts
+- [ ] T105 [i18n] Configure TanStack Start i18n for blog in blog/app/i18n.ts
+
+### Animation & Interaction Subtasks
+
+- [ ] T106 [P] [Animation] Configure Framer Motion variants in shared/animations/variants.ts (fadeIn, slideIn, stagger)
+- [ ] T106b [P] [Animation] Configure Framer Motion lazy loading strategy in shared/animations/lazy-loader.ts
+- [ ] T106c [P] [Animation] Implement animation performance monitoring (FPS, CLS) in shared/utils/animation-metrics.ts
+- [ ] T107 [P] [Animation] Add prefers-reduced-motion detection in shared/hooks/useReducedMotion.ts
+- [ ] T108 [P] [Animation] Create animated page transitions in src/components/PageTransition.astro
+- [ ] T109 [Animation] Add scroll-triggered animations using Framer Motion's viewport feature in src/components/AnimatedSection.astro
+- [ ] T110 [P] [Animation] Add micro-interactions for buttons and cards in src/components/InteractiveCard.astro
+- [ ] T111 [Animation] Configure loading animations for async content in src/components/LoadingSpinner.astro
+- [ ] T112 [P] [Animation] Add parallax scrolling effects for hero section in src/components/Hero.astro
+- [ ] T113 [Animation] Implement smooth scroll behavior in src/styles/global.css
+- [ ] T114 [P] [Animation] Unit test for animation variants in tests/unit/animations/variants.test.ts
+- [ ] T115 [P] [Animation] E2E test for reduced motion compliance in tests/e2e/accessibility.spec.ts
+- [ ] T115b [P] [Animation] Add animation bundle size test (≤15KB total) in tests/performance/animation-bundle.spec.ts
+
+### Dark Mode Implementation Subtasks
+
+- [ ] T116 [P] [DarkMode] Configure Tailwind CSS dark mode in tailwind.config.js (strategy: 'class')
+- [ ] T117 [P] [DarkMode] Create theme provider using Jotai in shared/store/theme.ts
+- [ ] T118 [P] [DarkMode] Add theme toggle component in src/components/ThemeToggle.astro
+- [ ] T119 [DarkMode] Implement system theme detection in shared/hooks/useSystemTheme.ts
+- [ ] T120 [DarkMode] Add theme persistence to localStorage in shared/utils/theme.ts
+- [ ] T121 [P] [DarkMode] Create dark mode color tokens in src/styles/tokens.css
+- [ ] T122 [DarkMode] Update all components with dark: variants in src/components/
+- [ ] T123 [DarkMode] Add theme transition animations in src/styles/theme-transitions.css
+- [ ] T124 [P] [DarkMode] Prevent flash of unstyled content (FOUC) with inline script in src/layouts/BaseLayout.astro
+- [ ] T125 [P] [DarkMode] Unit test for theme store in tests/unit/store/theme.test.ts
+- [ ] T126 [P] [DarkMode] E2E test for theme persistence in tests/e2e/theme.spec.ts
+
+### SEO Optimization Subtasks
+
+- [ ] T127 [P] [SEO] Create SEO component with meta tags in src/components/SEO.astro
+- [ ] T128 [P] [SEO] Add Open Graph meta tags for social sharing in src/components/OpenGraph.astro
+- [ ] T129 [P] [SEO] Add Twitter Card meta tags in src/components/TwitterCard.astro
+- [ ] T130 [P] [SEO] Add structured data (JSON-LD) in src/components/StructuredData.astro
+- [ ] T131 [SEO] Generate dynamic sitemap.xml in src/pages/sitemap.xml.ts
+- [ ] T132 [P] [SEO] Create robots.txt in public/robots.txt
+- [ ] T133 [SEO] Add canonical URLs to all pages in src/layouts/BaseLayout.astro
+- [ ] T134 [P] [SEO] Configure RSS feed for blog in blog/app/routes/rss.xml.ts
+- [ ] T135 [P] [SEO] Add image alt text validation in shared/utils/seo-validation.ts
+- [ ] T136 [SEO] Implement breadcrumb navigation with schema.org markup in src/components/Breadcrumbs.astro
+- [ ] T137 [P] [SEO] Add page metadata configuration in shared/config/seo.ts
+- [ ] T138 [P] [SEO] Unit test for SEO component in tests/unit/components/SEO.test.tsx
+- [ ] T139 [P] [SEO] E2E test for meta tags presence in tests/e2e/seo.spec.ts
+
+### Performance Optimization Subtasks
+
+- [ ] T140 [P] [Perf] Configure code splitting in astro.config.mjs (output: 'hybrid')
+- [ ] T141 [P] [Perf] Add image optimization with Astro Image in src/components/OptimizedImage.astro
+- [ ] T142 [P] [Perf] Implement lazy loading for images with loading="lazy"
+- [ ] T143 [Perf] Add route-based code splitting for TanStack Start in blog/app/router.tsx
+- [ ] T144 [P] [Perf] Configure bundle analysis with vite-plugin-bundle-stats in vite.config.ts
+- [ ] T145 [P] [Perf] Implement virtual scrolling for long lists in src/components/VirtualList.tsx
+- [ ] T146 [P] [Perf] Add resource hints (preload, prefetch) in src/layouts/BaseLayout.astro
+- [ ] T147 [P] [Perf] Configure font optimization with font-display: swap in src/styles/fonts.css
+- [ ] T148 [Perf] Implement service worker for offline support in public/sw.js
+- [ ] T149 [P] [Perf] Add performance monitoring with Web Vitals in shared/utils/web-vitals.ts
+- [ ] T150 [P] [Perf] Configure Lighthouse CI in .github/workflows/lighthouse.yml
+- [ ] T151 [P] [Perf] Add compression middleware in netlify/edge-functions/compression.ts
+- [ ] T152 [P] [Perf] Implement cache headers configuration in netlify.toml
+- [ ] T153 [P] [Perf] Add critical CSS extraction in astro.config.mjs
+- [ ] T154 [P] [Perf] Configure asset optimization (minify, compress) in vite.config.ts
+- [ ] T155 [P] [Perf] Performance test for Core Web Vitals in tests/performance/core-web-vitals.spec.ts
+- [ ] T156 [P] [Perf] Bundle size test (≤200KB gzipped) in tests/performance/bundle-size.spec.ts
+- [ ] T156b [Perf] Configure per-route bundle size limits in vite.config.ts (Astro routes: 100KB, Blog routes: 200KB)
+- [ ] T156c [Perf] Add bundle size regression test in CI that fails if limits exceeded
+
+### General Polish & Documentation
+
+- [ ] T157 [P] Update documentation in docs/
+- [ ] T158 [P] Code cleanup and refactoring
+- [ ] T159 [P] Additional unit tests in tests/unit/
+- [ ] T160 [P] Additional integration tests in tests/integration/
+- [ ] T161 Security hardening (CSRF protection, XSS prevention)
+- [ ] T162 [P] Accessibility audit with axe-core in tests/e2e/accessibility.spec.ts
+- [ ] T163 Run quickstart.md validation
+- [ ] T164 [P] Add error boundaries for React components in src/components/ErrorBoundary.tsx
+- [ ] T165 [P] Add loading states and skeleton screens in src/components/Skeleton.astro
+- [ ] T166 [P] [Analytics] Add analytics tracking with Plausible in netlify/edge-functions/analytics.ts
+- [ ] T166b [P] [Analytics] Setup Plausible Analytics account and script tag
+- [ ] T166c [P] [Analytics] Configure Plausible proxy through Netlify Edge Functions in netlify/edge-functions/analytics-proxy.ts
+- [ ] T166d [Analytics] Add Plausible tracking script to BaseLayout in src/layouts/BaseLayout.astro
+- [ ] T166e [P] [Analytics] Implement custom event tracking for portfolio interactions in shared/utils/track-event.ts
+- [ ] T166f [P] [Analytics] Add GDPR-compliant analytics notice to privacy policy
+- [ ] T166g [P] [Analytics] Configure analytics fallback to Google Analytics if Plausible unavailable
+- [ ] T167 [P] Add deployment configuration for Netlify in netlify.toml
+- [ ] T168 [P] Configure environment variables in .env.example
 
 ---
 
@@ -332,6 +447,7 @@ With multiple developers:
 **MVP (Minimum Viable Product)**: User Story 1 (Portfolio Value Proposition)
 
 This includes:
+
 - Homepage with hero section
 - Contact form and page
 - Basic navigation

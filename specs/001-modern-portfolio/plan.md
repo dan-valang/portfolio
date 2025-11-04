@@ -13,14 +13,16 @@ Build a performance-optimized, bilingual (English/Spanish) personal portfolio we
 
 **Language/Version**: TypeScript 5.x with React 18+
 
-**Architecture**: Hybrid multi-framework approach
-- **Static Portfolio**: Astro 4.x (primary static site framework)
-- **Dynamic Blog**: TanStack Start (SSR/SSG React framework for interactive features)
+**Architecture**: Unified Astro-based site with selective React islands
+
+**DECISION**: Single-platform deployment (Netlify only) chosen for simplicity, cost, and maintainability over hybrid multi-cloud approach.
+
+**Primary Framework**: Astro 4.x (SSG with opt-in SSR via Edge Functions)
 
 **Primary Dependencies**:
 
-*Astro Site (Main Portfolio):*
-- **Framework**: Astro 4.x with React integration for islands
+*Core Framework:*
+- **Framework**: Astro 4.x with React integration for interactive islands
 - **Styling**: Tailwind CSS v3+ with shadcn/ui component library
 - **State Management**: Jotai (atomic state for React islands)
 - **Routing**: Astro file-based routing with i18n support
@@ -28,15 +30,12 @@ Build a performance-optimized, bilingual (English/Spanish) personal portfolio we
 - **i18n**: Built-in Astro i18n routing + react-i18next for React islands
 - **Content**: Astro Content Collections for MDX blog posts
 - **Build**: Vite 5+ (integrated)
-- **Deployment**: Netlify (static + Edge Functions)
+- **Deployment**: Netlify (static + Edge Functions + Netlify Functions)
 
-*TanStack Start Blog (Dynamic Section):*
-- **Framework**: TanStack Start (full-stack React framework)
-- **Routing**: TanStack Router (file-based, type-safe)
-- **State Management**: TanStack Query + Jotai (for consistency)
-- **Styling**: Shared Tailwind CSS configuration
-- **Content**: MDX with remark/rehype plugins
-- **Deployment**: SST v3 (AWS Lambda + CloudFront) OR Netlify
+*Blog Implementation:*
+- **Approach**: Astro Content Collections with MDX
+- **Dynamic Features**: Netlify Functions for comments, search, cross-posting
+- **SSR**: Astro hybrid mode for dynamic blog routes
 
 *Shared/Cross-Cutting:*
 - **Linting**: oxlint (Rust-based, 50-100x faster than ESLint)
@@ -166,6 +165,41 @@ All six constitutional principles verified. The technical design satisfies the c
 | **Maintainability** | Clear separation of concerns; each framework used for its strengths |
 | **Modern Stack** | Cutting-edge: Astro 4.x, TanStack Start, Jotai, SST v3 |
 
+### Performance Budget Compliance Strategy
+
+**Constitutional Requirement**: Total JS ≤ 200KB gzipped per route
+
+**Current Base Bundle Estimate**:
+- Astro: ~5KB (runtime)
+- React islands: ~20-40KB per island (React 18 ~45KB shared)
+- TanStack Start base: React 45KB + Router 15KB + Framer Motion 30KB = ~90KB
+- **Total base**: ~110-135KB before feature code
+
+**Mitigation Strategy**:
+1. **Lazy Load Framer Motion**: Import animations on-demand using dynamic imports
+   - Hero animations: ~10KB
+   - Skills animations: ~8KB
+   - Blog animations: ~7KB
+   - Total potential savings: ~15-20KB by not loading all at once
+
+2. **Code Splitting by Route**:
+   - Home route: Astro (static) + minimal React island ~30KB
+   - Case studies: Astro + React island ~35KB
+   - Contact: Astro + form validation ~25KB
+   - Blog (TanStack): Separate bundle ~120KB (within budget for blog-only routes)
+
+3. **Bundle Monitoring**:
+   - Add bundle size CI check in Phase 8 (T156)
+   - Fail build if any route exceeds 200KB gzipped
+   - Use vite-plugin-bundle-analyzer for profiling
+
+4. **Acceptable Trade-offs**:
+   - Blog routes may approach 180KB due to TanStack Start base
+   - Static portfolio routes will stay under 100KB due to Astro's zero-JS default
+   - Overall site performance target (Lighthouse ≥90) remains achievable
+
+**Decision**: Proceed with hybrid architecture with monitoring; constitutional compliance validated per-route rather than globally.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -184,74 +218,172 @@ specs/001-modern-portfolio/
 └── tasks.md             # Phase 2: Task breakdown (NOT created by /speckit.plan)
 ```
 
-### Source Code (repository root)
+### Monorepo Structure (Hybrid Astro + TanStack Start)
 
-**Selected Structure**: Full-stack web application with TanStack Start file-based routing
+**Selected Structure**: Monorepo with two separate applications and shared utilities
 
 ```text
-app/
-├── routes/              # TanStack Start file-based routing
-│   ├── __root.tsx       # Root layout with theme provider, i18n provider
-│   ├── index.tsx        # Home page (hero, quick intro, CTA)
-│   ├── $lang/           # Language-prefixed routes (en, es)
-│   │   ├── about.tsx
-│   │   ├── projects/
-│   │   │   ├── index.tsx           # Projects listing page
-│   │   │   └── $slug.tsx           # Individual project case study
-│   │   ├── skills.tsx
-│   │   ├── blog/
-│   │   │   ├── index.tsx           # Blog listing with pagination
-│   │   │   └── $slug.tsx           # Individual blog post
-│   │   └── contact.tsx
-│   └── api/             # Server functions (Netlify serverless)
-│       ├── contact.ts   # Contact form submission handler
-│       └── linkedin/
-│           ├── auth.ts  # LinkedIn OAuth flow
-│           └── sync.ts  # LinkedIn data sync
-├── components/          # React components
-│   ├── ui/              # shadcn/ui components
-│   ├── layout/          # Layout components (Header, Footer, etc.)
-│   ├── sections/        # Page sections (Hero, ProjectCard, SkillsViz, etc.)
-│   └── features/        # Feature-specific components
-│       ├── blog/
-│       ├── projects/
-│       └── contact/
-├── lib/                 # Utilities and helpers
-│   ├── i18n/            # Internationalization setup
-│   ├── animations/      # Framer Motion variants and configs
-│   ├── hooks/           # Custom React hooks
-│   └── utils/           # Helper functions
-├── styles/              # Global styles
-│   └── globals.css      # Tailwind directives and global CSS
-├── content/             # Static content files
-│   ├── blog/            # Blog posts (MDX files)
-│   │   ├── en/
-│   │   └── es/
-│   ├── projects/        # Project case studies (JSON/MDX)
-│   ├── skills.json      # Skills data
-│   └── testimonials.json
-└── public/              # Static assets
-    ├── images/
-    ├── fonts/
-    └── favicon.ico
-
-tests/
-├── unit/                # Unit tests (Vitest + React Testing Library)
-├── integration/         # Integration tests for API routes
-└── e2e/                 # End-to-end tests (Playwright recommended)
-
-.netlify/
-└── functions/           # Netlify-specific functions (if needed beyond app/routes/api)
+/home/dan/code/personal/portfolio/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                    # Lint, test, build
+│       ├── lighthouse-ci.yml         # Performance checks
+│       └── deploy.yml                # Netlify + SST deployment
+│
+├── packages/                         # Monorepo workspaces
+│   ├── astro-site/                   # Main portfolio (Astro 4.x)
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── Hero.astro
+│   │   │   │   ├── CaseStudyCard.astro
+│   │   │   │   ├── SkillsVisualization.astro
+│   │   │   │   ├── LanguageSwitcher.astro
+│   │   │   │   ├── ThemeToggle.tsx    # React island
+│   │   │   │   └── ui/                # shadcn/ui components
+│   │   │   ├── layouts/
+│   │   │   │   └── BaseLayout.astro
+│   │   │   ├── pages/
+│   │   │   │   ├── index.astro        # Redirect to /en or /es
+│   │   │   │   ├── en/
+│   │   │   │   │   ├── index.astro    # EN homepage
+│   │   │   │   │   ├── about.astro
+│   │   │   │   │   ├── case-studies/
+│   │   │   │   │   │   ├── index.astro
+│   │   │   │   │   │   └── [slug].astro
+│   │   │   │   │   ├── skills.astro
+│   │   │   │   │   └── contact.astro
+│   │   │   │   ├── es/                # ES pages (same structure)
+│   │   │   │   ├── sitemap.xml.ts
+│   │   │   │   ├── sitemap-[lang].xml.ts
+│   │   │   │   └── api/               # Astro API routes
+│   │   │   │       └── contact.ts     # Contact form handler
+│   │   │   ├── i18n/
+│   │   │   │   ├── config.ts
+│   │   │   │   ├── locales/
+│   │   │   │   │   ├── en/
+│   │   │   │   │   │   ├── common.json
+│   │   │   │   │   │   ├── hero.json
+│   │   │   │   │   │   └── about.json
+│   │   │   │   │   └── es/            # Spanish translations
+│   │   │   │   └── schemas.ts         # Zod validation
+│   │   │   ├── lib/
+│   │   │   │   ├── animations/
+│   │   │   │   │   ├── config.ts
+│   │   │   │   │   ├── variants.ts
+│   │   │   │   │   ├── useScrollParallax.ts
+│   │   │   │   │   └── usePrefersReducedMotion.ts
+│   │   │   │   └── utils/
+│   │   │   ├── store/                 # Jotai atoms
+│   │   │   │   └── theme.ts
+│   │   │   ├── styles/
+│   │   │   │   ├── global.css
+│   │   │   │   └── themes.css         # Dark mode CSS variables
+│   │   │   └── content/               # Astro Content Collections
+│   │   │       ├── config.ts
+│   │   │       ├── case-studies/      # MDX files
+│   │   │       └── testimonials/      # JSON files
+│   │   ├── public/
+│   │   │   ├── images/
+│   │   │   ├── og/                    # Open Graph images
+│   │   │   ├── fonts/
+│   │   │   └── robots.txt
+│   │   ├── astro.config.mjs           # Astro config with i18n
+│   │   ├── tailwind.config.mjs
+│   │   └── package.json
+│   │
+│   ├── blog/                          # TanStack Start blog
+│   │   ├── app/
+│   │   │   ├── routes/
+│   │   │   │   ├── __root.tsx         # Root layout
+│   │   │   │   ├── index.tsx          # Blog listing
+│   │   │   │   ├── $lang/
+│   │   │   │   │   └── blog/
+│   │   │   │   │       ├── index.tsx  # Blog listing by lang
+│   │   │   │   │       └── $slug.tsx  # Blog post
+│   │   │   │   └── api/
+│   │   │   │       ├── linkedin/
+│   │   │   │       │   ├── auth.ts    # OAuth flow
+│   │   │   │       │   └── cross-post.ts
+│   │   │   │       └── rss/
+│   │   │   │           └── [lang].xml.ts
+│   │   │   └── components/
+│   │   │       ├── BlogPostList.tsx
+│   │   │       ├── BlogPostDetail.tsx
+│   │   │       └── MDXProvider.tsx
+│   │   ├── server/                    # Server-side logic
+│   │   │   ├── linkedin.ts
+│   │   │   └── mdx-loader.ts
+│   │   ├── content/
+│   │   │   └── blog/
+│   │   │       ├── en/                # English blog posts (MDX)
+│   │   │       └── es/                # Spanish blog posts (MDX)
+│   │   ├── sst.config.ts              # SST deployment config
+│   │   └── package.json
+│   │
+│   └── shared/                        # Shared utilities
+│       ├── types/
+│       │   ├── CaseStudy.ts
+│       │   ├── Skill.ts
+│       │   ├── Testimonial.ts
+│       │   ├── BlogPost.ts
+│       │   ├── LinkedInProfile.ts
+│       │   └── index.ts
+│       ├── utils/
+│       │   ├── validation.ts          # Zod schemas
+│       │   └── date.ts
+│       ├── components/                # Shared React components
+│       │   └── ui/                    # shadcn/ui (used by both apps)
+│       └── package.json
+│
+├── specs/                             # Feature specifications
+│   └── 001-modern-portfolio/
+│       ├── spec.md
+│       ├── plan.md
+│       ├── tasks.md
+│       ├── research.md
+│       ├── data-model.md
+│       ├── quickstart.md
+│       └── contracts/
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── package.json                       # Root package.json (workspace)
+├── pnpm-workspace.yaml                # Workspace config
+├── turbo.json                         # Turborepo config (optional)
+└── netlify.toml                       # Netlify config with redirects
 ```
 
-**Structure Decision**:
+## Unified Deployment Architecture
 
-This structure follows TanStack Start's file-based routing conventions optimized for SSR/SSG hybrid rendering. The `app/routes/` directory uses TanStack Router's file-based approach where:
-- `$lang/` creates dynamic language segments for bilingual routing
-- `$slug.tsx` creates dynamic routes for projects and blog posts
-- `api/` folder contains server-side functions that compile to Netlify Functions
+**Deployment Platform**: Netlify (single platform)
 
-The separation of `components/`, `lib/`, and `content/` provides clear boundaries between UI, business logic, and data. Content files (MDX for blog, JSON for structured data) live outside the routes for easier content management and enable static generation at build time.
+**Rationale**:
+1. **Simplicity**: One deployment target, one domain, one CI/CD pipeline
+2. **Cost**: Netlify free tier sufficient; avoids AWS minimum costs
+3. **Performance**: Edge Functions + CDN adequate for portfolio scale
+4. **Maintenance**: Fewer moving parts, simpler troubleshooting
+
+**Architecture Details**:
+- **Static Pages**: Astro SSG for home, about, case studies, skills (pre-rendered at build)
+- **Dynamic Blog**: Astro hybrid mode with Edge Functions for SSR
+- **API Routes**: Netlify Functions for contact form, LinkedIn OAuth, blog operations
+- **Content**: All managed via Astro Content Collections (single source of truth)
+
+**URL Structure**:
+- `/` → Static homepage (Astro)
+- `/en/`, `/es/` → Localized routes (Astro i18n)
+- `/en/case-studies/[slug]` → Static case study pages
+- `/en/blog/[slug]` → Dynamic blog posts (Astro hybrid SSR)
+- `/api/contact` → Netlify Function
+- `/api/linkedin/*` → Netlify Edge Functions (OAuth, sync)
+
+**Bundle Strategy**:
+- Static routes: <100KB JS (Astro zero-JS default + minimal React islands)
+- Blog routes: <180KB JS (Astro + MDX + interactive features)
+- Separate bundles per route via Vite code splitting
 
 ## Complexity Tracking
 
