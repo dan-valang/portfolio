@@ -67,6 +67,8 @@ Build a performance-optimized, bilingual (English/Spanish) personal portfolio we
 
 **Project Type**: Full-stack web application (SSR/SSG hybrid with serverless API routes)
 
+**Package Management**: pnpm workspaces with pnpm-workspace.yaml configuration (npm available as fallback)
+
 **Performance Goals**:
 - Lighthouse Performance ≥ 90 (mobile)
 - Core Web Vitals at p75: LCP ≤ 2.5s, INP < 200ms, CLS < 0.1
@@ -220,7 +222,7 @@ specs/001-modern-portfolio/
 
 ### Monorepo Structure (Hybrid Astro + TanStack Start)
 
-**Selected Structure**: Monorepo with two separate applications and shared utilities
+**Selected Structure**: Monorepo with two separate applications and shared utilities, managed by pnpm workspaces
 
 ```text
 /home/dan/code/personal/portfolio/
@@ -230,7 +232,7 @@ specs/001-modern-portfolio/
 │       ├── lighthouse-ci.yml         # Performance checks
 │       └── deploy.yml                # Netlify + SST deployment
 │
-├── packages/                         # Monorepo workspaces
+├── packages/                         # pnpm workspaces
 │   ├── astro-site/                   # Main portfolio (Astro 4.x)
 │   │   ├── src/
 │   │   │   ├── components/
@@ -351,7 +353,7 @@ specs/001-modern-portfolio/
 │   └── e2e/
 │
 ├── package.json                       # Root package.json (workspace)
-├── pnpm-workspace.yaml                # Workspace config
+├── pnpm-workspace.yaml                # pnpm workspace configuration
 ├── turbo.json                         # Turborepo config (optional)
 └── netlify.toml                       # Netlify config with redirects
 ```

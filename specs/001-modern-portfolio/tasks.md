@@ -33,7 +33,7 @@ description: "Task list for Modern Portfolio feature implementation"
 - [ ] T002 Initialize TypeScript 5.x project with React 18+ dependencies
 - [ ] T003 [P] Configure oxlint for fast Rust-based linting
 - [ ] T004 [P] Configure Prettier for code formatting
-- [ ] T005 [P] Setup package.json workspaces for monorepo structure
+- [ ] T005 [P] Setup pnpm workspaces for monorepo structure using pnpm-workspace.yaml
 
 ---
 

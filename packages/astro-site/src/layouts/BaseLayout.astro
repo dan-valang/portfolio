@@ -1,0 +1,24 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang={Astro.currentLocale || 'en'}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <ViewTransitions />
+  </head>
+  <body class="min-h-screen bg-white dark:bg-gray-900">
+    <slot />
+  </body>
+</html>

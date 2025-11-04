@@ -36,8 +36,9 @@ This quickstart guide provides step-by-step implementation guidance for building
 # Node.js LTS (v20+)
 node --version  # Should be v20.x or higher
 
-# Package manager
-npm --version   # npm 10+ or pnpm 8+
+# Package manager (pnpm recommended)
+pnpm --version  # pnpm 8+ (npm available as fallback)
+npm --version   # npm 10+ (fallback option)
 
 # Git
 git --version   # 2.x+
@@ -64,7 +65,10 @@ cd portfolio
 # Checkout the feature branch
 git checkout 001-modern-portfolio
 
-# Install dependencies (from project root)
+# Install dependencies using pnpm workspaces (recommended)
+pnpm install
+
+# Alternative: Use npm if pnpm not available
 npm install
 ```
 
@@ -109,10 +113,13 @@ SENTRY_DSN=your_sentry_dsn_here
 
 ```bash
 # Terminal 1: Run Astro dev server (main portfolio)
-npm run dev
+pnpm dev
 
 # Terminal 2: Run TanStack Start dev server (blog)
 cd blog
+pnpm dev
+
+# Alternative: Use npm if pnpm not available
 npm run dev
 
 # Access the sites:
@@ -203,38 +210,38 @@ portfolio/
 #### Tasks
 
 1. **Initialize Astro Project**
-   ```bash
-   # Already done, verify configuration
-   cat astro.config.mjs
-   ```
+    ```bash
+    # Already done, verify configuration
+    cat astro.config.mjs
+    ```
 
 2. **Configure Integrations**
-   
-   Update `astro.config.mjs`:
-   ```typescript
-   import { defineConfig } from 'astro/config';
-   import react from '@astrojs/react';
-   import tailwind from '@astrojs/tailwind';
-   import mdx from '@astrojs/mdx';
-   import netlify from '@astrojs/netlify';
+    
+    Update `astro.config.mjs`:
+    ```typescript
+    import { defineConfig } from 'astro/config';
+    import react from '@astrojs/react';
+    import tailwind from '@astrojs/tailwind';
+    import mdx from '@astrojs/mdx';
+    import netlify from '@astrojs/netlify';
 
-   export default defineConfig({
-     output: 'hybrid', // SSG with opt-in SSR
-     adapter: netlify(),
-     integrations: [
-       react(),
-       tailwind(),
-       mdx(),
-     ],
-     i18n: {
-       defaultLocale: 'en',
-       locales: ['en', 'es'],
-       routing: {
-         prefixDefaultLocale: false,
-       },
-     },
-   });
-   ```
+    export default defineConfig({
+      output: 'hybrid', // SSG with opt-in SSR
+      adapter: netlify(),
+      integrations: [
+        react(),
+        tailwind(),
+        mdx(),
+      ],
+      i18n: {
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        routing: {
+          prefixDefaultLocale: false,
+        },
+      },
+    });
+    ```
 
 3. **Create Base Layout**
    
@@ -655,9 +662,16 @@ const projects = await getCollection('projects');
 mkdir blog && cd blog
 
 # Initialize TanStack Start project
+pnpm create @tanstack/start@latest
+
+# Alternative: Use npm if pnpm not available
 npm create @tanstack/start@latest
 
 # Install additional dependencies
+pnpm install @tanstack/react-router zod react-i18next
+pnpm install -D @tanstack/router-devtools
+
+# Alternative: Use npm if pnpm not available
 npm install @tanstack/react-router zod react-i18next
 npm install -D @tanstack/router-devtools
 ```
@@ -829,6 +843,10 @@ export async function getAllPosts(): Promise<Post[]> {
 #### Jotai Setup
 
 ```bash
+# Install Jotai using pnpm (recommended)
+pnpm install jotai
+
+# Alternative: Use npm if pnpm not available
 npm install jotai
 ```
 
@@ -908,7 +926,11 @@ export function ThemeSwitcher() {
 #### Testing Setup
 
 ```bash
-# Install testing dependencies
+# Install testing dependencies using pnpm (recommended)
+pnpm install -D vitest @testing-library/react @testing-library/jest-dom
+pnpm install -D @playwright/test
+
+# Alternative: Use npm if pnpm not available
 npm install -D vitest @testing-library/react @testing-library/jest-dom
 npm install -D @playwright/test
 ```
@@ -989,13 +1011,18 @@ test.describe('Portfolio Navigation', () => {
 #### Run Tests
 
 ```bash
-# Unit tests
+# Unit tests using pnpm (recommended)
+pnpm test
+
+# E2E tests using pnpm (recommended)
+pnpm test:e2e
+
+# Coverage report using pnpm (recommended)
+pnpm test:coverage
+
+# Alternative: Use npm if pnpm not available
 npm run test
-
-# E2E tests
 npm run test:e2e
-
-# Coverage report
 npm run test:coverage
 ```
 
@@ -1070,8 +1097,11 @@ export default $config({
 #### Deployment Commands
 
 ```bash
-# Deploy Astro to Netlify
-netlify deploy --prod
+# Deploy Astro to Netlify using pnpm (recommended)
+pnpm deploy
+
+# Alternative: Use npm if pnpm not available
+npm run deploy
 
 # Deploy Blog to AWS via SST
 cd blog
@@ -1091,7 +1121,35 @@ npx sst deploy --stage production
 
 ## 🔍 Key Implementation Patterns
 
-### 1. Hybrid Rendering Strategy
+### 1. pnpm Workspace Management
+
+**pnpm-workspace.yaml Configuration**:
+```yaml
+packages:
+  - 'packages/*'
+```
+
+**Install dependencies across all workspaces**:
+```bash
+# Install dependency to all workspaces
+pnpm add -w react
+
+# Install dependency to specific workspace
+pnpm --filter astro-site add astro
+pnpm --filter blog add @tanstack/start
+
+# Run script in specific workspace
+pnpm --filter astro-site dev
+pnpm --filter blog dev
+```
+
+**Benefits of pnpm workspaces**:
+- Faster installation due to shared dependencies
+- Smaller node_modules footprint
+- Strict dependency management
+- Better monorepo support
+
+### 2. Hybrid Rendering Strategy
 
 **Astro Pages**: Use `output: 'hybrid'` for mostly static with selective SSR
 

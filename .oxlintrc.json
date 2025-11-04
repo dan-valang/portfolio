@@ -1,0 +1,29 @@
+{
+  "$schema": "https://oxc-project.github.io/oxlint/schema.json",
+  "rules": {
+    "typescript": "recommended",
+    "react": "recommended",
+    "jsx-a11y": "recommended",
+    "import": "recommended",
+    "unicorn": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "ignores": [
+    "node_modules",
+    "dist",
+    "build",
+    ".astro",
+    "coverage",
+    "playwright-report",
+    "test-results"
+  ]
+}

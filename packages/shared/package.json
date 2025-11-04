@@ -1,0 +1,14 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared utilities and types for portfolio packages",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
