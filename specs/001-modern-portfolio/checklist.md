@@ -9,7 +9,7 @@ Feature: specs/001-modern-portfolio/spec.md
 - [x] CC-001 Minimalist & Content-First: Content-first FRs and clear hierarchy present.
 - [x] CC-002 Performance-Oriented: Lighthouse ≥ 90; CWV thresholds; performance budget specified.
 - [x] CC-003 Showcase-Driven Development: Case studies as primary artifacts with outcomes.
-- [ ] CC-004 Continuous Deployment noted in constitution but excluded from spec scope by design.
+- [x] CC-004 Continuous Deployment noted in constitution but excluded from spec scope by design.
 
 ## Specification Structure
 
